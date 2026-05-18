@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>SimulElec 5.1 — Electricidad en Sonido en Vivo · IP Santo Tomás</title>
+<title>SimulElec — Aprendizaje · MUS00075 · IP Santo Tomás</title>
 <style>
 :root{
   --bg:#F4F4F4;
@@ -122,7 +122,7 @@
     <button class="btn" style="font-size:10px;padding:2px 8px" onclick="abrirModalAlumno()">👤 Datos</button>
     <button class="btn" style="font-size:10px;padding:2px 8px" onclick="exportarSesion()">💾 Guardar</button>
     <button class="btn" style="font-size:10px;padding:2px 8px" onclick="importarSesion()">📂 Cargar</button>
-    <button class="btn btn-blue" style="font-size:10px;padding:2px 8px" onclick="exportarDOCX()">📄 Exportar DOCX</button>
+    <button class="btn btn-blue" style="font-size:10px;padding:2px 8px" onclick="exportarPDF()">📄 Exportar PDF</button>
   </div>
   <span class="pill pill-blue" id="badge-global">Inicio</span>
 </header>
@@ -132,6 +132,8 @@
   <div class="sidebar-label">Módulos</div>
   <div class="nav-item" onclick="goPage('m1')" id="nav-m1"><div class="nav-num nav-num-1">1</div><span>Fichas técnicas</span><div class="nav-dot" id="st-m1"></div></div>
   <div class="nav-item" onclick="goPage('m2')" id="nav-m2"><div class="nav-num nav-num-2">2</div><span>Tablero visual</span><div class="nav-dot" id="st-m2"></div></div>
+  <div class="sidebar-label" style="color:#009A44;margin-top:12px">📋 Progreso guiado</div>
+  <div id="panel-pasos" style="margin-bottom:10px"></div>
   <div class="sidebar-label">Referencia visual</div>
   <div class="nav-item" onclick="goPage('m3d')" id="nav-m3d"><div class="nav-num nav-num-3">3D</div><span>Vista 3D equipos</span><div class="nav-dot" id="st-m3d"></div></div>
   <div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--border);margin-top:auto">
@@ -193,7 +195,7 @@
         </div>
       </div>
       <div class="g3" style="margin-bottom:8px">
-        <div class="field"><label>Tensión (V)</label><input id="f-tension" type="number" value="220"/></div>
+        <div class="field"><label>Tensión (V)</label><input id="f-tension" type="number" value="230"/></div>
         <div class="field"><label>Corriente (A)</label><input id="f-corriente" type="number" step="0.1" placeholder="5.5"/></div>
         <div class="field"><label>Potencia (W)</label><input id="f-potencia" type="number" placeholder="1200"/></div>
       </div>
@@ -220,14 +222,24 @@
     <div class="g4" id="m1-stats" style="margin-bottom:10px"></div>
     <div id="m1-alertas"></div>
     <div class="card">
-      <div class="card-title">Configuración del tablero</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <span style="font-weight:600;font-size:13px">Tablero:</span>
+        <select id="t-selector-tablero" onchange="m1CambiarTableroActivo()" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);font-family:var(--font);flex:1;min-width:140px"></select>
+        <button class="btn" onclick="m1AgregarTablero()" style="font-size:11px;padding:4px 10px;white-space:nowrap">+ Nuevo tablero</button>
+        <button class="btn" onclick="m1EliminarTablero()" style="font-size:11px;padding:4px 10px;white-space:nowrap;background:var(--red,#e53e3e);color:#fff;border-color:var(--red,#e53e3e)">🗑 Eliminar</button>
+      </div>
+      <div class="card-title">Configuración del tablero activo</div>
       <div class="g3" style="margin-bottom:8px">
-        <div class="field"><label>Disyuntor general (A)</label><input id="t-general" type="number" value="40" onchange="m1RenderTablero()"/></div>
-        <div class="field"><label>Tensión de red (V)</label><input id="t-tension" type="number" value="220" onchange="m1RenderTablero()"/></div>
+        <div class="field"><label>Nombre del tablero</label><input id="t-nombre-tablero" type="text" value="Tablero General" onchange="m1GuardarNombreTablero()"/></div>
+        <div class="field"><label>Fase</label><select id="t-fase-tablero" onchange="m1GuardarFaseTablero()"><option value="trifasico">Trifásico</option><option value="monofasico">Monofásico</option><option value="L1">Fase L1</option><option value="L2">Fase L2</option><option value="L3">Fase L3</option></select></div>
+        <div class="field"><label>Capacidad total generador (A)</label><input id="t-general" type="number" value="40" onchange="var _tb=m1GetTableroActivo();if(_tb&&!_tb.parentId)_tb.amperaje=parseFloat(this.value)||40;m1RenderTablero()"/></div>
+      </div>
+      <div class="g3" style="margin-bottom:8px">
+        <div class="field"><label>Tensión de fase</label><div style="padding:8px 11px;background:var(--bg4,#E8E8E8);border:1px solid var(--border);border-radius:var(--r);font-size:14px;color:var(--text2)" id="t-tension-display">230V (global)</div></div>
         <div class="field"><label>Longitud tendido (m)</label><input id="t-longitud" type="number" value="25" onchange="m1RenderTablero()"/></div>
+        <div class="field"><label>Sección cable (mm²)</label><select id="t-seccion" onchange="m1RenderTablero()"><option value="1.5">1.5mm²</option><option value="2.5">2.5mm²</option><option value="4" selected>4mm²</option><option value="6">6mm²</option><option value="10">10mm²</option></select></div>
       </div>
       <div class="g2">
-        <div class="field"><label>Sección cable (mm²)</label><select id="t-seccion" onchange="m1RenderTablero()"><option value="1.5">1.5mm²</option><option value="2.5">2.5mm²</option><option value="4" selected>4mm²</option><option value="6">6mm²</option><option value="10">10mm²</option></select></div>
         <div class="field"><label>Número de circuitos</label><select id="t-ncirc" onchange="m1ActualizarCircuitos()"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
       </div>
     </div>
@@ -311,6 +323,7 @@
     <div class="field"><label>Nombre completo</label><input id="al-nombre" placeholder="Nombre Apellido"/></div>
     <div class="field"><label>Fecha</label><input id="al-fecha" type="date"/></div>
     <div class="field"><label>Asignatura</label><input id="al-asignatura" value="MUS00075 — Electricidad y Mantenimiento"/></div>
+    <div class="field"><label>Tensión de fase (V)</label><input id="al-tension" type="number" value="230" min="100" max="400" onchange="APP.tension=parseFloat(this.value)||230"/></div>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="btn btn-blue" onclick="guardarAlumno()">Guardar</button>
       <button class="btn" onclick="cerrarModal()">Cancelar</button>
@@ -339,21 +352,32 @@ window.addEventListener('unhandledrejection', function(e) {
 // ══════════════════════════════════════════════════════════════════
 
 window.APP = {
-  norma: 'chilena', // 'chilena' | 'europea'
+  norma: 'chilena',
+  tension: 230, // Tensión de fase global (V) — se refleja en toda la instalación // 'chilena' | 'europea'
   alumno: { nombre: '', fecha: '', asignatura: 'MUS00075 — Electricidad y Mantenimiento' },
   m1: {
     equipos: [],
-    circuitos: [
-      {id:'c1',nombre:'Circuito 1 — PA principal',amp:16,equipos:[]},
-      {id:'c2',nombre:'Circuito 2 — Consola y monitores',amp:10,equipos:[]},
-      {id:'c3',nombre:'Circuito 3 — Backline e iluminación',amp:16,equipos:[]}
-    ],
-    tablero: {general:40, tension:220, longitud:25, seccion:4, ncirc:3}
+    tableros: [
+      {
+        id:'t1',
+        nombre:'Tablero General',
+        fase:'trifasico',
+        parentId: null,
+        amperaje:40,
+        tension:230,
+        longitud:25,
+        seccion:4,
+        ncirc:3,
+        circuitos: [
+          {id:'c1',nombre:'Circuito 1',amp:16,equipos:[]},
+          {id:'c2',nombre:'Circuito 2',amp:16,equipos:[]},
+          {id:'c3',nombre:'Circuito 3',amp:16,equipos:[]}
+        ]
+      }
+    ]
   },
   m2: { elems:[], cables:[], norma:'chilena' },
-  m3: { escActual:null, inspecciones:{}, eppSel:[], registro:[] },
-  m4: { estResueltas:{}, glResp:{}, xlrResp:{}, ordenArr:[], estActiva:null, eppEst:{} },
-  progreso: {m1:false,m2:false,m3:false,m4:false}
+  progreso: {m1:false, m2:false}
 };
 
 // ── NORMA COLORES ─────────────────────────────────────────────────
@@ -370,16 +394,64 @@ window.getFaseColor = (fase) => {
 // ── CÁLCULOS ELÉCTRICOS ───────────────────────────────────────────
 window.calcW = (eq) => {
   if (eq.potencia && parseFloat(eq.potencia) > 0) return parseFloat(eq.potencia);
-  if (eq.corriente && eq.tension) return parseFloat(eq.corriente) * parseFloat(eq.tension) * parseFloat(eq.fp || 0.85);
+  if (eq.corriente && eq.tension) return parseFloat(eq.corriente) * parseFloat(eq.tension||APP.tension||230) * parseFloat(eq.fp || 0.85);
   return 0;
 };
 window.calcA = (eq) => {
-  const w = calcW(eq), v = parseFloat(eq.tension || 220), fp = parseFloat(eq.fp || 0.85);
+  const w = calcW(eq), v = parseFloat(eq.tension || APP.tension || 230), fp = parseFloat(eq.fp || 0.85);
   return w / (v * fp);
 };
 window.wattsCirc = (c, equipos) => c.equipos.reduce((s,id) => { const e=equipos.find(x=>x.id===id); return s+(e?calcW(e):0); }, 0);
 window.ampsCirc  = (c, equipos) => c.equipos.reduce((s,id) => { const e=equipos.find(x=>x.id===id); return s+(e?calcA(e):0); }, 0);
 window.pctCirc   = (c, equipos) => Math.min(110, (ampsCirc(c,equipos) / c.amp) * 100);
+
+// ── JERARQUÍA DE TABLEROS ─────────────────────────────────────────
+// Retorna los hijos directos de un tablero (por parentId)
+window.m1GetHijosDirectos = (tbId) => {
+  return APP.m1.tableros.filter(t => t.parentId === tbId);
+};
+// Retorna todos los descendientes de un tablero (recursivo)
+window.m1GetTodosDescendientes = (tbId) => {
+  const hijos = m1GetHijosDirectos(tbId);
+  return hijos.concat(hijos.flatMap(h => m1GetTodosDescendientes(h.id)));
+};
+// Corriente total de un tablero incluyendo todos sus descendientes
+window.m1GetAmpsTotal = (tb) => {
+  const propios = tb.circuitos.reduce((s,c) => s + ampsCirc(c, APP.m1.equipos), 0);
+  const descendientes = m1GetTodosDescendientes(tb.id);
+  const hijos = descendientes.reduce((s,h) => s + h.circuitos.reduce((s2,c) => s2 + ampsCirc(c, APP.m1.equipos), 0), 0);
+  return propios + hijos;
+};
+// Potencia total de un tablero incluyendo todos sus descendientes
+window.m1GetWattsTotal = (tb) => {
+  const propios = tb.circuitos.reduce((s,c) => s + wattsCirc(c, APP.m1.equipos), 0);
+  const descendientes = m1GetTodosDescendientes(tb.id);
+  const hijos = descendientes.reduce((s,h) => s + h.circuitos.reduce((s2,c) => s2 + wattsCirc(c, APP.m1.equipos), 0), 0);
+  return propios + hijos;
+};
+// Retorna la capacidad efectiva de un tablero según su posición en la jerarquía
+window.m1GetCapacidadEfectiva = (tb) => {
+  if (!tb.parentId) return tb.amperaje; // raíz: usa su propio amperaje
+  const padre = APP.m1.tableros.find(t => t.id === tb.parentId);
+  if (!padre) return tb.amperaje;
+  const capPadre = m1GetCapacidadEfectiva(padre);
+  // Contar hermanos del mismo nivel para dividir la capacidad del padre
+  const hermanos = m1GetHijosDirectos(padre.id);
+  return hermanos.length > 0 ? capPadre / hermanos.length : capPadre;
+};
+// Retorna el nivel de profundidad de un tablero (0 = raíz)
+window.m1GetNivel = (tb) => {
+  if (!tb.parentId) return 0;
+  const padre = APP.m1.tableros.find(t => t.id === tb.parentId);
+  return padre ? m1GetNivel(padre) + 1 : 0;
+};
+// Etiqueta de capacidad según nivel
+window.m1GetEtiquetaCapacidad = (tb) => {
+  const nivel = m1GetNivel(tb);
+  if (nivel === 0) return 'Capacidad total generador (A)';
+  if (nivel === 1) return 'Capacidad de la fase (A)';
+  return 'Capacidad de la línea (A)';
+};
 
 // ── SESIÓN EXPORT/IMPORT ──────────────────────────────────────────
 window.exportarSesion = () => {
@@ -408,6 +480,23 @@ window.importarSesion = () => {
         if (data.APP) Object.assign(APP, data.APP);
         else Object.assign(APP, data); // compatibilidad con sesiones viejas
         APP.norma = (data.APP || data).norma || 'chilena';
+        // Compatibilidad hacia atrás: convertir estructura antigua m1.tablero+circuitos → m1.tableros
+        if (APP.m1 && APP.m1.tablero && !APP.m1.tableros) {
+          APP.m1.tableros = [{
+            id: 't1',
+            nombre: 'Tablero General',
+            fase: 'trifasico',
+            amperaje: APP.m1.tablero.general || 40,
+            tension: APP.m1.tablero.tension || 220,
+            longitud: APP.m1.tablero.longitud || 25,
+            seccion: APP.m1.tablero.seccion || 4,
+            ncirc: APP.m1.tablero.ncirc || 3,
+            circuitos: APP.m1.circuitos || []
+          }];
+          delete APP.m1.tablero;
+          delete APP.m1.circuitos;
+        }
+        window._m1TableroActivoIdx = 0;
         // Restaurar M2
         if (data.m2) {
           m2v3Elems  = data.m2.elems  || [];
@@ -544,7 +633,7 @@ window.m1LimpiarFormulario = () => {
 
 window.m1EliminarEquipo = (id) => {
   APP.m1.equipos = APP.m1.equipos.filter(e=>e.id!==id);
-  APP.m1.circuitos.forEach(c=>{ c.equipos = c.equipos.filter(e=>e!==id); });
+  APP.m1.tableros.forEach(t=>{ t.circuitos.forEach(c=>{ c.equipos = c.equipos.filter(e=>e!==id); }); });
   if (m1EditandoId === id) m1CancelarEdicion();
   m1RenderFichas();
   showToast('Equipo eliminado','ok');
@@ -596,6 +685,7 @@ window.m1RenderFichas = () => {
 };
 
 window.m1CargarEjemplo = () => {
+  if(APP.m1.equipos.length>0&&!confirm('¿Cargar el ejemplo? Se sobrescribirán los datos actuales.'))return;
   APP.m1.equipos = [
     {id:'e1',nombre:'Crown XTi 2002',sistema:'PA',sistemaNombre:'PA',tension:'220',corriente:'5.0',potencia:'1100',tipo:'monofásico',conector:'PowerCon',fp:'0.95',fpFuente:'ficha',proteccion:'Disyuntor 16A',notas:'Amplificador PA tops'},
     {id:'e2',nombre:'Crown XTi 1002 (subwoofer)',sistema:'PA',sistemaNombre:'PA',tension:'220',corriente:'3.4',potencia:'750',tipo:'monofásico',conector:'PowerCon',fp:'0.95',fpFuente:'ficha',proteccion:'Disyuntor 16A',notas:'Amplificador sub'},
@@ -613,41 +703,205 @@ window.m1CargarEjemplo = () => {
     {id:'e14',nombre:'ADJ Fog Storm 1200',sistema:'Iluminación',sistemaNombre:'Iluminación',tension:'220',corriente:'5.5',potencia:'1200',tipo:'monofásico',conector:'Schuko',fp:'1.00',fpFuente:'supuesto',proteccion:'Disyuntor 16A',notas:'Carga resistiva — ciclos de calor'},
     {id:'e15',nombre:'QSC GX5',sistema:'PA',sistemaNombre:'PA',tension:'220',corriente:'3.2',potencia:'700',tipo:'monofásico',conector:'PowerCon',fp:'0.98',fpFuente:'ficha',proteccion:'Disyuntor 16A',notas:'Amplificador fill'},
   ];
-  APP.m1.circuitos[0].equipos = ['e1','e2','e15'];
-  APP.m1.circuitos[1].equipos = ['e3','e4','e5','e6'];
-  APP.m1.circuitos[2].equipos = ['e7','e8','e9','e10','e11','e12','e13','e14'];
+  // Reiniciar circuitos sin equipos asignados para que el usuario los asigne manualmente
+  APP.m1.tableros.forEach(function(t){ t.circuitos.forEach(function(c){ c.equipos=[]; }); });
   m1RenderFichas();
   APP.progreso.m1 = true;
   updateGlobalProg();
   showToast('Ejemplo cargado — evento sala pequeña','ok');
 };
 
+// ── TABLERO ACTIVO INDEX ─────────────────────────────────────────
+window._m1TableroActivoIdx = 0;
+
+window.m1GetTableroActivo = () => {
+  const t = APP.m1.tableros;
+  if (!t || !t.length) return null;
+  if (_m1TableroActivoIdx >= t.length) _m1TableroActivoIdx = 0;
+  return t[_m1TableroActivoIdx];
+};
+
+window.m1CambiarTableroActivo = () => {
+  const sel = document.getElementById('t-selector-tablero');
+  if (sel) _m1TableroActivoIdx = parseInt(sel.value) || 0;
+  m1RenderTablero();
+};
+
+window.m1AgregarTablero = () => {
+  const nombre = prompt('Nombre del nuevo tablero:', 'Tablero Fase L' + (APP.m1.tableros.length + 1));
+  if (!nombre) return;
+  const faseOpts = ['trifasico','monofasico','L1','L2','L3'];
+  const faseLabels = ['Trifásico','Monofásico','Fase L1','Fase L2','Fase L3'];
+  let faseChoice = prompt('Fase (0=Trifásico, 1=Monofásico, 2=L1, 3=L2, 4=L3):', '0');
+  const faseIdx = Math.min(4, Math.max(0, parseInt(faseChoice) || 0));
+  // Preguntar tablero padre
+  let parentId = null;
+  if (APP.m1.tableros.length > 0) {
+    const opciones = APP.m1.tableros.map((t,i) => i + ': ' + t.nombre).join('\n');
+    const pChoice = prompt('¿Es hijo de algún tablero? Ingresa el número o deja vacío para raíz:\n' + opciones, '');
+    if (pChoice !== null && pChoice !== '') {
+      const pIdx = parseInt(pChoice);
+      if (!isNaN(pIdx) && pIdx >= 0 && pIdx < APP.m1.tableros.length) {
+        parentId = APP.m1.tableros[pIdx].id;
+      }
+    }
+  }
+  const newId = 't' + (Date.now());
+  APP.m1.tableros.push({
+    id: newId,
+    nombre: nombre,
+    fase: faseOpts[faseIdx],
+    parentId: parentId,
+    amperaje: 40,
+    tension: 230,
+    longitud: 25,
+    seccion: 4,
+    ncirc: 3,
+    circuitos: [
+      {id:'c1_'+newId, nombre:'Circuito 1', amp:16, equipos:[]},
+      {id:'c2_'+newId, nombre:'Circuito 2', amp:16, equipos:[]},
+      {id:'c3_'+newId, nombre:'Circuito 3', amp:16, equipos:[]}
+    ]
+  });
+  _m1TableroActivoIdx = APP.m1.tableros.length - 1;
+  m1RenderTablero();
+  showToast('Tablero "' + nombre + '" creado', 'ok');
+};
+
+window.m1EliminarTablero = () => {
+  if (APP.m1.tableros.length <= 1) { showToast('Debe existir al menos un tablero', 'danger'); return; }
+  const tb = m1GetTableroActivo();
+  if (!tb) return;
+  if (!confirm('¿Eliminar "' + tb.nombre + '"? Se perderán sus circuitos y asignaciones.')) return;
+  APP.m1.tableros.splice(_m1TableroActivoIdx, 1);
+  if (_m1TableroActivoIdx >= APP.m1.tableros.length) _m1TableroActivoIdx = APP.m1.tableros.length - 1;
+  m1RenderTablero();
+  showToast('Tablero eliminado', 'ok');
+};
+
+window.m1GuardarNombreTablero = () => {
+  const tb = m1GetTableroActivo(); if (!tb) return;
+  const v = document.getElementById('t-nombre-tablero');
+  if (v) tb.nombre = v.value;
+  m1ActualizarSelectorTablero();
+};
+
+window.m1GuardarFaseTablero = () => {
+  const tb = m1GetTableroActivo(); if (!tb) return;
+  const v = document.getElementById('t-fase-tablero');
+  if (v) tb.fase = v.value;
+};
+
+window.m1ActualizarSelectorTablero = () => {
+  const sel = document.getElementById('t-selector-tablero'); if (!sel) return;
+  sel.innerHTML = APP.m1.tableros.map((t,i) => {
+    const fLabel = {trifasico:'(3F)',monofasico:'(1F)',L1:'(L1)',L2:'(L2)',L3:'(L3)'}[t.fase]||'';
+    const nivel = m1GetNivel(t);
+    const indent = '　'.repeat(nivel); // indentación por nivel
+    const prefix = nivel > 0 ? '└ ' : '';
+    return `<option value="${i}" ${i===_m1TableroActivoIdx?'selected':''}>${indent}${prefix}${t.nombre} ${fLabel}</option>`;
+  }).join('');
+};
+
 window.m1RenderTablero = () => {
   const tEl = document.getElementById('m1-tablero');
   if (!tEl || !tEl.classList.contains('active')) return;
-  const tb = APP.m1.tablero;
-  const genAmp = parseFloat(document.getElementById('t-general').value) || tb.general;
-  const vRed   = parseFloat(document.getElementById('t-tension').value)  || tb.tension;
-  const long   = parseFloat(document.getElementById('t-longitud').value) || tb.longitud;
-  const secc   = parseFloat(document.getElementById('t-seccion').value)  || tb.seccion;
-  tb.general=genAmp; tb.tension=vRed; tb.longitud=long; tb.seccion=secc;
+  const tb = m1GetTableroActivo();
+  if (!tb) return;
 
+  // Actualizar selector de tableros
+  m1ActualizarSelectorTablero();
+
+  // Sincronizar inputs con tablero activo
+  const elG=document.getElementById('t-general'), elV=document.getElementById('t-tension'),
+        elL=document.getElementById('t-longitud'), elS=document.getElementById('t-seccion'),
+        elN=document.getElementById('t-ncirc'), elNom=document.getElementById('t-nombre-tablero'),
+        elF=document.getElementById('t-fase-tablero');
+  const genAmp = tb.parentId ? m1GetCapacidadEfectiva(tb) : (tb.amperaje||40);
+  const vRed   = APP.tension || 230;
+  const long   = elL ? (parseFloat(elL.value)||tb.longitud||25) : (tb.longitud||25);
+  const secc   = elS ? (parseFloat(elS.value)||tb.seccion||4) : (tb.seccion||4);
+  // Guardar en tablero activo (amperaje solo si es raíz)
+  if (!tb.parentId) tb.amperaje=genAmp;
+  tb.tension=vRed; tb.longitud=long; tb.seccion=secc;
+  // Actualizar UI con valores del tablero
+  if(elG && document.activeElement!==elG) elG.value = genAmp;
+  var _td=document.getElementById('t-tension-display'); if(_td) _td.textContent=(APP.tension||230)+'V (global)';
+  if(elV && document.activeElement!==elV) elV.value = vRed;
+  if(elL && document.activeElement!==elL) elL.value = long;
+  if(elS) { Array.from(elS.options).forEach(o=>o.selected=(parseFloat(o.value)===secc)); }
+  if(elN) { const nc=tb.circuitos.length; Array.from(elN.options).forEach(o=>o.selected=(parseInt(o.value)===nc)); }
+  if(elNom && document.activeElement!==elNom) elNom.value = tb.nombre||'';
+  if(elF) { Array.from(elF.options).forEach(o=>o.selected=(o.value===(tb.fase||'trifasico'))); }
+
+  const circuitos = tb.circuitos;
   const totalW = APP.m1.equipos.reduce((s,e)=>s+calcW(e),0);
   const totalA = APP.m1.equipos.reduce((s,e)=>s+calcA(e),0);
-  const pctGen = Math.min(110,(totalA/genAmp)*100);
-  const asig   = new Set(APP.m1.circuitos.flatMap(c=>c.equipos));
+  // Potencia/corriente del tablero activo incluyendo descendientes
+  const tbW = m1GetWattsTotal(tb);
+  const tbA = m1GetAmpsTotal(tb);
+  // Capacidad efectiva según jerarquía
+  const capEfectiva = m1GetCapacidadEfectiva(tb);
+  // Para la UI del campo de capacidad, solo el tablero raíz tiene campo editable
+  const esRaiz = !tb.parentId;
+  const etiquetaCap = m1GetEtiquetaCapacidad(tb);
+  const pctGen = Math.min(110,(tbA/capEfectiva)*100);
+  const asig   = new Set(APP.m1.tableros.flatMap(t=>t.circuitos.flatMap(c=>c.equipos)));
   const sinAsig= APP.m1.equipos.filter(e=>!asig.has(e.id));
 
+  const faseLabel = {trifasico:'Trifásico',monofasico:'Monofásico',L1:'Fase L1',L2:'Fase L2',L3:'Fase L3'}[tb.fase]||tb.fase||'';
+  // Actualizar etiqueta del campo capacidad
+  const labelCap = document.querySelector('label[for="t-general"]') || (() => {
+    const labels = document.querySelectorAll('.field label');
+    for (const l of labels) if (l.textContent.includes('Capacidad')) return l;
+    return null;
+  })();
+  // Actualizar label dinámicamente
+  const allLabels = document.querySelectorAll('.field label');
+  allLabels.forEach(l => { if (l.textContent.includes('Capacidad') || l.textContent.includes('generador') || l.textContent.includes('fase') || l.textContent.includes('línea')) l.textContent = etiquetaCap; });
+  // Si es hijo, el campo de capacidad muestra el valor calculado (readonly)
+  if (elG) {
+    if (esRaiz) {
+      elG.readOnly = false;
+      elG.style.background = '';
+      elG.style.color = '';
+      elG.value = genAmp;
+    } else {
+      elG.readOnly = true;
+      elG.style.background = 'var(--bg4,#E8E8E8)';
+      elG.style.color = 'var(--text2)';
+      elG.value = capEfectiva.toFixed(1);
+    }
+  }
+
+  // Info de descendientes para tablero raíz
+  const hijos = m1GetHijosDirectos(tb.id);
+  const tieneHijos = hijos.length > 0;
+
   document.getElementById('m1-stats').innerHTML = `
-    <div class="stat-card"><div class="stat-val" style="color:#009A44">${totalW.toFixed(0)}W</div><div class="stat-lbl">Potencia total</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#009A44">${totalA.toFixed(1)}A</div><div class="stat-lbl">Corriente total</div></div>
-    <div class="stat-card"><div class="stat-val">${genAmp}A</div><div class="stat-lbl">Disyuntor general</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:${pctGen>100?'var(--red)':pctGen>80?'var(--orange)':'var(--green)'}">${Math.round(pctGen)}%</div><div class="stat-lbl">Uso general</div></div>`;
+    <div class="stat-card"><div class="stat-val" style="color:#009A44">${tbW.toFixed(0)}W</div><div class="stat-lbl">${tieneHijos ? 'Potencia total sistema' : 'Potencia tablero'}</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#009A44">${tbA.toFixed(1)}A</div><div class="stat-lbl">${tieneHijos ? 'Corriente total sistema' : 'Corriente tablero'}</div></div>
+    <div class="stat-card"><div class="stat-val">${capEfectiva.toFixed(1)}A</div><div class="stat-lbl">${etiquetaCap.replace(' (A)','')}</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:${pctGen>100?'var(--red)':pctGen>80?'var(--orange)':'var(--green)'}">${Math.round(pctGen)}%</div><div class="stat-lbl">Uso — ${faseLabel}</div></div>`;
 
   let al = '';
-  if (totalA>genAmp) al+=`<div class="abox adanger">Sobrecarga general: ${totalA.toFixed(1)}A supera ${genAmp}A.</div>`;
-  if (sinAsig.length) al+=`<div class="abox awarn">${sinAsig.length} equipo(s) sin circuito: ${sinAsig.map(e=>e.nombre).join(', ')}.</div>`;
-  APP.m1.circuitos.forEach(c=>{
+  if (tbA>capEfectiva) al+=`<div class="abox adanger">Sobrecarga: ${tbA.toFixed(1)}A supera la capacidad de ${capEfectiva.toFixed(1)}A.</div>`;
+  // Mostrar resumen de tableros hijos si los hay
+  if (tieneHijos) {
+    hijos.forEach(h => {
+      const hA = m1GetAmpsTotal(h);
+      const hW = m1GetWattsTotal(h);
+      const hCap = m1GetCapacidadEfectiva(h);
+      const hPct = Math.min(110, (hA/hCap)*100);
+      const col = hPct>100?'var(--red)':hPct>80?'var(--orange)':'var(--green)';
+      al += `<div class="abox aneutral" style="display:flex;justify-content:space-between;align-items:center">
+        <span><strong>${h.nombre}</strong> — ${hW.toFixed(0)}W / ${hA.toFixed(1)}A</span>
+        <span style="color:${col};font-weight:600">${Math.round(hPct)}% de ${hCap.toFixed(1)}A</span>
+      </div>`;
+    });
+  }
+  if (sinAsig.length) al+=`<div class="abox awarn">${sinAsig.length} equipo(s) sin circuito asignado: ${sinAsig.map(e=>e.nombre).join(', ')}.</div>`;
+  circuitos.forEach(c=>{
     const p=pctCirc(c,APP.m1.equipos);
     if(p>100) al+=`<div class="abox adanger">Sobrecarga ${c.nombre}: ${ampsCirc(c,APP.m1.equipos).toFixed(1)}A / ${c.amp}A.</div>`;
     else if(p>80) al+=`<div class="abox awarn">${c.nombre} al ${Math.round(p)}%.</div>`;
@@ -655,10 +909,10 @@ window.m1RenderTablero = () => {
   if (!al) al=`<div class="abox aok">Distribución segura. Ningún circuito supera el 80%.</div>`;
   document.getElementById('m1-alertas').innerHTML = al;
 
-  const rho=0.0175, caidaV=(2*rho*long*totalA/secc), caidaPct=(caidaV/vRed)*100, apto=caidaPct<=3;
+  const rho=0.0175, caidaV=(2*rho*long*tbA/secc), caidaPct=(caidaV/vRed)*100, apto=caidaPct<=3;
   const secSug = secc>=6?'10':secc>=4?'6':secc>=2.5?'4':'2.5';
   document.getElementById('m1-caida').innerHTML = `
-    <div class="card-title">Verificación de caída de tensión</div>
+    <div class="card-title">Verificación de caída de tensión — ${tb.nombre}</div>
     <div class="g3" style="margin-top:8px">
       <div class="stat-card"><div class="stat-val">${caidaV.toFixed(2)}V</div><div class="stat-lbl">Caída</div></div>
       <div class="stat-card"><div class="stat-val" style="color:${apto?'var(--green)':'var(--red)'}">${caidaPct.toFixed(2)}%</div><div class="stat-lbl">% (máx 3%)</div></div>
@@ -666,10 +920,10 @@ window.m1RenderTablero = () => {
     </div>
     ${!apto?`<div class="abox adanger" style="margin-top:8px">Aumentar sección a ${secSug} mm² o reducir longitud del tendido.</div>`:''}`;
 
-  // render circuitos
-  const asigActualizada = new Set(APP.m1.circuitos.flatMap(c=>c.equipos));
+  // render circuitos del tablero activo
+  const asigActualizada = new Set(APP.m1.tableros.flatMap(t=>t.circuitos.flatMap(c=>c.equipos)));
   let circ = '';
-  APP.m1.circuitos.forEach((c,i) => {
+  circuitos.forEach((c,i) => {
     const p=pctCirc(c,APP.m1.equipos), col=p>100?'var(--red)':p>80?'var(--orange)':'var(--green)';
     const chips = c.equipos.map(id => {
       const e=APP.m1.equipos.find(x=>x.id===id);
@@ -677,17 +931,18 @@ window.m1RenderTablero = () => {
     }).join('');
     const opts = APP.m1.equipos.filter(e=>!asigActualizada.has(e.id))
       .map(e=>`<option value="${e.id}">${e.nombre} — ${e.sistemaNombre||e.sistema} (${calcW(e).toFixed(0)}W)</option>`).join('');
+    const tIdx = _m1TableroActivoIdx;
     circ += `<div style="border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden">
       <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg3)">
-        <input value="${c.nombre}" style="font-size:12px;font-weight:500;border:none;background:transparent;color:var(--text);flex:1;font-family:var(--font)" onchange="APP.m1.circuitos[${i}].nombre=this.value"/>
-        <select style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);font-family:var(--font)" onchange="APP.m1.circuitos[${i}].amp=parseInt(this.value);m1RenderTablero()">
+        <input value="${c.nombre}" style="font-size:12px;font-weight:500;border:none;background:transparent;color:var(--text);flex:1;font-family:var(--font)" onchange="APP.m1.tableros[${tIdx}].circuitos[${i}].nombre=this.value"/>
+        <select style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);font-family:var(--font)" onchange="APP.m1.tableros[${tIdx}].circuitos[${i}].amp=parseInt(this.value);m1RenderTablero()">
           ${[6,10,16,20,25,32].map(a=>`<option value="${a}" ${c.amp===a?'selected':''}>${a}A</option>`).join('')}
         </select>
         <div style="width:60px;background:var(--border);border-radius:3px;height:4px;overflow:hidden"><div style="width:${Math.min(100,p).toFixed(0)}%;height:100%;background:${col};border-radius:3px"></div></div>
         <span style="font-size:11px;color:${col};min-width:36px">${Math.round(p)}%</span>
       </div>
       <div style="padding:8px 12px">
-        <div style="min-height:28px;margin-bottom:6px">${chips||'<span style="font-size:11px;color:var(--text3)">Sin equipos asignados</span>'}</div>
+        <div style="min-height:28px;margin-bottom:6px">${chips||'<span style="font-size:11px;color:var(--text3)">Arrastra o asigna equipos desde el selector inferior</span>'}</div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <select id="m1sel-${c.id}" style="font-size:11px;padding:4px 7px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);color:var(--text);flex:1;min-width:140px;font-family:var(--font)">
             <option value="">— Seleccionar equipo —</option>${opts}
@@ -703,64 +958,84 @@ window.m1RenderTablero = () => {
 
 window.m1AsignarCirc = (cid) => {
   const sel=document.getElementById('m1sel-'+cid); if(!sel||!sel.value) return;
-  const c=APP.m1.circuitos.find(x=>x.id===cid); if(c){c.equipos.push(sel.value); m1RenderTablero();}
+  const tb=m1GetTableroActivo(); if(!tb) return;
+  const c=tb.circuitos.find(x=>x.id===cid); if(c){c.equipos.push(sel.value); m1RenderTablero();}
 };
 window.m1QuitarDeCirc = (cid,eid) => {
-  const c=APP.m1.circuitos.find(x=>x.id===cid);
-  if(c){c.equipos=c.equipos.filter(e=>e!==eid); m1RenderTablero();}
+  // Buscar el circuito en todos los tableros
+  for(const t of APP.m1.tableros){
+    const c=t.circuitos.find(x=>x.id===cid);
+    if(c){c.equipos=c.equipos.filter(e=>e!==eid); m1RenderTablero(); return;}
+  }
 };
 window.m1ActualizarCircuitos = () => {
+  const tb=m1GetTableroActivo(); if(!tb) return;
   const n=parseInt(document.getElementById('t-ncirc').value);
-  while(APP.m1.circuitos.length<n) APP.m1.circuitos.push({id:'c'+APP.m1.circuitos.length,nombre:'Circuito '+(APP.m1.circuitos.length+1),amp:10,equipos:[]});
-  APP.m1.circuitos = APP.m1.circuitos.slice(0,n);
+  const tIdx=_m1TableroActivoIdx;
+  while(tb.circuitos.length<n) tb.circuitos.push({id:'c'+tb.circuitos.length+'_'+tIdx,nombre:'Circuito '+(tb.circuitos.length+1),amp:10,equipos:[]});
+  tb.circuitos = tb.circuitos.slice(0,n);
+  tb.ncirc = n;
   m1RenderTablero();
 };
 
 window.m1RenderEsquema = () => {
-  const totalW=APP.m1.equipos.reduce((s,e)=>s+calcW(e),0);
-  const totalA=APP.m1.equipos.reduce((s,e)=>s+calcA(e),0);
-  const genAmp=APP.m1.tablero.general||40;
-  const svgW=520, svgH=Math.max(320, 180+APP.m1.circuitos.length*80);
-  let svg=`<svg viewBox="0 0 ${svgW} ${svgH}" style="width:100%;max-width:${svgW}px;font-family:var(--font)">`;
-  svg+=`<rect x="10" y="10" width="${svgW-20}" height="${svgH-20}" rx="8" fill="#171b26" stroke="#2a3050" stroke-width="0.5"/>`;
-  svg+=`<text x="${svgW/2}" y="30" text-anchor="middle" font-size="11" font-weight="500" fill="#9ba3c0">TABLERO ELÉCTRICO — ${APP.m1.tablero.tension||220}V</text>`;
-  svg+=`<rect x="${svgW/2-80}" y="40" width="160" height="52" rx="4" fill="#1a2a4a" stroke="#4f8ef7" stroke-width="0.5"/>`;
-  svg+=`<text x="${svgW/2}" y="58" text-anchor="middle" font-size="9" font-weight="500" fill="#4f8ef7">Diferencial general</text>`;
-  svg+=`<text x="${svgW/2}" y="72" text-anchor="middle" font-size="8" fill="#9ba3c0">${genAmp}A — 30mA</text>`;
-  const pGen=Math.min(100,(totalA/genAmp)*100);const cGen=pGen>100?'#f05252':pGen>80?'#f5a623':'#3dd68c';
-  svg+=`<rect x="${svgW/2-60}" y="84" width="120" height="4" rx="2" fill="#2a3050"/><rect x="${svgW/2-60}" y="84" width="${(pGen/100)*120}" height="4" rx="2" fill="${cGen}"/>`;
-  svg+=`<line x1="${svgW/2}" y1="92" x2="${svgW/2}" y2="114" stroke="#2a3050" stroke-width="1.5"/>`;
-  svg+=`<line x1="50" y1="114" x2="${svgW-50}" y2="114" stroke="#2a3050" stroke-width="1.5"/>`;
-  const n=APP.m1.circuitos.length;
-  APP.m1.circuitos.forEach((c,i)=>{
-    const x=60+(i*((svgW-120)/(Math.max(n-1,1))));
-    const p=pctCirc(c,APP.m1.equipos),col=p>100?'#f05252':p>80?'#f5a623':'#3dd68c';
-    svg+=`<line x1="${x}" y1="114" x2="${x}" y2="136" stroke="${col}" stroke-width="1.5"/>`;
-    svg+=`<rect x="${x-32}" y="136" width="64" height="44" rx="4" fill="#1e2333" stroke="${col}" stroke-width="0.5"/>`;
-    svg+=`<text x="${x}" y="153" text-anchor="middle" font-size="8" font-weight="500" fill="${col}">Disyuntor</text>`;
-    svg+=`<text x="${x}" y="166" text-anchor="middle" font-size="8" fill="#9ba3c0">${c.amp}A — ${Math.round(p)}%</text>`;
-    svg+=`<line x1="${x}" y1="180" x2="${x}" y2="200" stroke="${col}" stroke-width="1.5"/>`;
-    svg+=`<rect x="${x-52}" y="200" width="104" height="46" rx="4" fill="#171b26" stroke="${col}" stroke-width="0.5"/>`;
-    const cn=c.nombre.length>14?c.nombre.substring(0,14)+'…':c.nombre;
-    svg+=`<text x="${x}" y="216" text-anchor="middle" font-size="8" font-weight="500" fill="${col}">${cn}</text>`;
-    svg+=`<text x="${x}" y="228" text-anchor="middle" font-size="7" fill="#9ba3c0">${ampsCirc(c,APP.m1.equipos).toFixed(1)}A / ${wattsCirc(c,APP.m1.equipos).toFixed(0)}W</text>`;
-    svg+=`<text x="${x}" y="239" text-anchor="middle" font-size="7" fill="#5c6480">${c.equipos.length} equipo(s)</text>`;
+  const svgW=520;
+  const tableros = APP.m1.tableros || [];
+  let allSvg = '';
+
+  tableros.forEach((tb, tIdx) => {
+    const circuitos = tb.circuitos || [];
+    const tbW = circuitos.reduce((s,c)=>s+wattsCirc(c,APP.m1.equipos),0);
+    const tbA = circuitos.reduce((s,c)=>s+ampsCirc(c,APP.m1.equipos),0);
+    const genAmp = tb.amperaje || 40;
+    const vRed = APP.tension || 230;
+    const faseLabel = {trifasico:'3~ '+vRed+'V',monofasico:'1~ '+vRed+'V',L1:'L1 '+vRed+'V',L2:'L2 '+vRed+'V',L3:'L3 '+vRed+'V'}[tb.fase]||vRed+'V';
+    const svgH=Math.max(320, 180+circuitos.length*80);
+    let svg=`<svg viewBox="0 0 ${svgW} ${svgH}" style="width:100%;max-width:${svgW}px;font-family:var(--font);margin-bottom:16px">`;
+    svg+=`<rect x="10" y="10" width="${svgW-20}" height="${svgH-20}" rx="8" fill="#171b26" stroke="#2a3050" stroke-width="0.5"/>`;
+    svg+=`<text x="${svgW/2}" y="30" text-anchor="middle" font-size="11" font-weight="500" fill="#9ba3c0">${tb.nombre.toUpperCase()} — ${faseLabel}</text>`;
+    svg+=`<rect x="${svgW/2-80}" y="40" width="160" height="52" rx="4" fill="#1a2a4a" stroke="#4f8ef7" stroke-width="0.5"/>`;
+    svg+=`<text x="${svgW/2}" y="58" text-anchor="middle" font-size="9" font-weight="500" fill="#4f8ef7">Diferencial general</text>`;
+    svg+=`<text x="${svgW/2}" y="72" text-anchor="middle" font-size="8" fill="#9ba3c0">${genAmp}A — 30mA</text>`;
+    const pGen=Math.min(100,(tbA/genAmp)*100);const cGen=pGen>100?'#f05252':pGen>80?'#f5a623':'#3dd68c';
+    svg+=`<rect x="${svgW/2-60}" y="84" width="120" height="4" rx="2" fill="#2a3050"/><rect x="${svgW/2-60}" y="84" width="${(pGen/100)*120}" height="4" rx="2" fill="${cGen}"/>`;
+    svg+=`<line x1="${svgW/2}" y1="92" x2="${svgW/2}" y2="114" stroke="#2a3050" stroke-width="1.5"/>`;
+    svg+=`<line x1="50" y1="114" x2="${svgW-50}" y2="114" stroke="#2a3050" stroke-width="1.5"/>`;
+    const n=circuitos.length;
+    circuitos.forEach((c,i)=>{
+      const x=60+(i*((svgW-120)/(Math.max(n-1,1))));
+      const p=pctCirc(c,APP.m1.equipos),col=p>100?'#f05252':p>80?'#f5a623':'#3dd68c';
+      svg+=`<line x1="${x}" y1="114" x2="${x}" y2="136" stroke="${col}" stroke-width="1.5"/>`;
+      svg+=`<rect x="${x-32}" y="136" width="64" height="44" rx="4" fill="#1e2333" stroke="${col}" stroke-width="0.5"/>`;
+      svg+=`<text x="${x}" y="153" text-anchor="middle" font-size="8" font-weight="500" fill="${col}">Disyuntor</text>`;
+      svg+=`<text x="${x}" y="166" text-anchor="middle" font-size="8" fill="#9ba3c0">${c.amp}A — ${Math.round(p)}%</text>`;
+      svg+=`<line x1="${x}" y1="180" x2="${x}" y2="200" stroke="${col}" stroke-width="1.5"/>`;
+      svg+=`<rect x="${x-52}" y="200" width="104" height="46" rx="4" fill="#171b26" stroke="${col}" stroke-width="0.5"/>`;
+      const cn=c.nombre.length>14?c.nombre.substring(0,14)+'…':c.nombre;
+      svg+=`<text x="${x}" y="216" text-anchor="middle" font-size="8" font-weight="500" fill="${col}">${cn}</text>`;
+      svg+=`<text x="${x}" y="228" text-anchor="middle" font-size="7" fill="#9ba3c0">${ampsCirc(c,APP.m1.equipos).toFixed(1)}A / ${wattsCirc(c,APP.m1.equipos).toFixed(0)}W</text>`;
+      svg+=`<text x="${x}" y="239" text-anchor="middle" font-size="7" fill="#5c6480">${c.equipos.length} equipo(s)</text>`;
+    });
+    svg+=`<text x="20" y="${svgH-12}" font-size="8" fill="#5c6480">Total: ${tbW.toFixed(0)}W / ${tbA.toFixed(1)}A sobre diferencial ${genAmp}A (${Math.round(pGen)}%)</text>`;
+    svg+='</svg>';
+    allSvg += svg;
   });
-  svg+=`<text x="20" y="${svgH-12}" font-size="8" fill="#5c6480">Total: ${totalW.toFixed(0)}W / ${totalA.toFixed(1)}A sobre diferencial ${genAmp}A (${Math.round(pGen)}%)</text>`;
-  svg+='</svg>';
-  document.getElementById('m1-esquema-svg').innerHTML=svg;
+
+  document.getElementById('m1-esquema-svg').innerHTML = allSvg || '<div style="color:var(--text3);padding:8px">Sin tableros configurados.</div>';
 
   let r=''; let ok=true;
-  const asig=new Set(APP.m1.circuitos.flatMap(c=>c.equipos));
+  const asig=new Set(APP.m1.tableros.flatMap(t=>t.circuitos.flatMap(c=>c.equipos)));
   const sinAsig=APP.m1.equipos.filter(e=>!asig.has(e.id));
-  APP.m1.circuitos.forEach(c=>{
-    const p=pctCirc(c,APP.m1.equipos);
-    if(p>100){ok=false;r+=`<div class="abox adanger">Sobrecarga ${c.nombre} — NO APTO. ${ampsCirc(c,APP.m1.equipos).toFixed(1)}A / ${c.amp}A.</div>`;}
-    else if(p>80) r+=`<div class="abox awarn">${c.nombre} al ${Math.round(p)}%.</div>`;
+  APP.m1.tableros.forEach(tb=>{
+    tb.circuitos.forEach(c=>{
+      const p=pctCirc(c,APP.m1.equipos);
+      if(p>100){ok=false;r+=`<div class="abox adanger">Sobrecarga ${c.nombre} (${tb.nombre}) — NO APTO. ${ampsCirc(c,APP.m1.equipos).toFixed(1)}A / ${c.amp}A.</div>`;}
+      else if(p>80) r+=`<div class="abox awarn">${c.nombre} (${tb.nombre}) al ${Math.round(p)}%.</div>`;
+    });
+    const mixPA=tb.circuitos.find(c=>c.equipos.some(id=>{const e=APP.m1.equipos.find(x=>x.id===id);return e?.sistema==='PA';})&&c.equipos.some(id=>{const e=APP.m1.equipos.find(x=>x.id===id);return e?.sistema==='Iluminación';}));
+    if(mixPA){ok=false;r+=`<div class="abox awarn">PA e Iluminación en mismo circuito (${tb.nombre}): riesgo de interferencia.</div>`;}
   });
-  if(sinAsig.length){ok=false;r+=`<div class="abox awarn">${sinAsig.length} equipo(s) sin circuito.</div>`;}
-  const mixPA=APP.m1.circuitos.find(c=>c.equipos.some(id=>{const e=APP.m1.equipos.find(x=>x.id===id);return e?.sistema==='PA';})&&c.equipos.some(id=>{const e=APP.m1.equipos.find(x=>x.id===id);return e?.sistema==='Iluminación';}));
-  if(mixPA){ok=false;r+=`<div class="abox awarn">PA e Iluminación en mismo circuito: riesgo de interferencia.</div>`;}
+  if(sinAsig.length){ok=false;r+=`<div class="abox awarn">${sinAsig.length} equipo(s) sin circuito asignado.</div>`;}
   if(ok&&APP.m1.equipos.length>0) r=`<div class="abox aok">Esquema validado. Distribución segura y sistemas separados.</div>`;
   if(!APP.m1.equipos.length) r=`<div class="abox aneutral">Agrega equipos en la pestaña Fichas Técnicas.</div>`;
   document.getElementById('m1-riesgos').innerHTML=r;
@@ -774,7 +1049,7 @@ window.m1RenderEsquema = () => {
 const M2_COMPS_V3 = [
   // ── Acometida trifásica — L1 L2 L3 N salida abajo (PE va por barra separada)
   // Orden: L1(-54) L2(-18) L3(+18) N(+54)
-  {tipo:'acom_tri',  label:'Acometida trifásica', sub:'380V 3~', w:140, h:90, color:'#546e7a',
+  {tipo:'acom_tri',  label:'Acometida trifásica', sub:'400V 3~', w:140, h:90, color:'#546e7a',
    terms:[
      {id:'L1',t:'F1',dx:-54,dy:45,side:'out'},
      {id:'L2',t:'F2',dx:-18,dy:45,side:'out'},
@@ -782,7 +1057,7 @@ const M2_COMPS_V3 = [
      {id:'N', t:'N', dx: 54,dy:45,side:'out'},
    ]},
   // ── Acometida monofásica
-  {tipo:'acom_mono', label:'Acometida monofásica',sub:'220V', w:90, h:70, color:'#546e7a',
+  {tipo:'acom_mono', label:'Acometida monofásica',sub:'230V', w:90, h:70, color:'#546e7a',
    terms:[
      {id:'F',t:'F1',dx:-22,dy:35,side:'out'},
      {id:'N',t:'N', dx: 22,dy:35,side:'out'},
@@ -869,7 +1144,7 @@ const M2_COMPS_V3 = [
      {id:'No', t:'N', dx: 60,dy: 45,side:'out'},
    ]},
   // ── Schuko — orden: PE(-24) F(0) N(24)
-  {tipo:'schuko',    label:'Toma Schuko',    sub:'220V',      w:90, h:80, color:'#2e7d32',
+  {tipo:'schuko',    label:'Toma Schuko',    sub:'230V',      w:90, h:80, color:'#2e7d32',
    terms:[
      {id:'PEi',t:'PE',dx:-28,dy:-40,side:'in'},
      {id:'Fi', t:'Fx',dx:  0,dy:-40,side:'in'},
@@ -891,11 +1166,11 @@ const M2_COMPS_V3 = [
   // ── Barra PE — 5 terminales uniformes
   {tipo:'tierra',    label:'Barra PE',       sub:'PE tierra',  w:180, h:28, color:'#2e7d32',
    terms:[
-     {id:'P1',t:'PE',dx:-68,dy:0,side:'out'},
-     {id:'P2',t:'PE',dx:-34,dy:0,side:'out'},
-     {id:'P3',t:'PE',dx:  0,dy:0,side:'out'},
-     {id:'P4',t:'PE',dx: 34,dy:0,side:'out'},
-     {id:'P5',t:'PE',dx: 68,dy:0,side:'out'},
+     {id:'P1',t:'PE',dx:-68,dy:-26,side:'none'},
+     {id:'P2',t:'PE',dx:-34,dy:-26,side:'none'},
+     {id:'P3',t:'PE',dx:  0,dy:-26,side:'none'},
+     {id:'P4',t:'PE',dx: 34,dy:-26,side:'none'},
+     {id:'P5',t:'PE',dx: 68,dy:-26,side:'none'},
    ]},
   // ── Carga — orden: PE(-24) F(0) N(24)
   {tipo:'carga',     label:'Carga',          sub:'sistema',    w:90, h:70, color:'#c62828',
@@ -1045,15 +1320,15 @@ function m2v3HitTerm(wx,wy){
   // Use comp definition w/h (same as DrawTerm) for consistent hit detection
   // Two-pass: first tight pass (exact terminal), then wider if nothing found
   for(var pass=0;pass<2;pass++){
-    var r=(pass===0?9:16)/m2v3Zoom;
+    var r=(pass===0?14:22)/m2v3Zoom;
     for(var i=m2v3Elems.length-1;i>=0;i--){
       var el=m2v3Elems[i];
       var cd=m2C3(el.tipo); if(!cd) continue;
       var cw=cd.w, ch=cd.h; // always use comp definition size
       for(var j=0;j<cd.terms.length;j++){
         var t=cd.terms[j];
-        var _tOff=t.side==='in'?-7:t.side==='out'?7:0;
-        var tx=el.x+cw/2+t.dx, ty=el.y+ch/2+t.dy+_tOff;
+        var _tOff2=(t.side==='in'?-7:t.side==='out'?7:0)/m2v3Zoom;
+        var tx=el.x+cw/2+t.dx, ty=el.y+ch/2+t.dy+_tOff2;
         if(Math.hypot(wx-tx,wy-ty)<r)
           return {elemId:el.id,termId:t.id,ttype:t.t,fase:el.fase,wx:tx,wy:ty};
       }
@@ -1164,6 +1439,11 @@ function m2v3OnUp(){
 function m2v3OnClick(e){
   if(m2v3Panning) return;
   var css=m2v3CSS(e); var w=m2v3World(css.x,css.y);
+  // Auto-switch to mover when clicking existing element or text
+  var _ae=m2v3HitElem(w.x,w.y);
+  if(_ae&&m2v3Modo!=='mover'){m2v3SetModo('mover');m2v3SelElem=_ae;m2v3SelCable=null;m2v3SelText=null;m2v3CableFrom=null;m2v3RenderProps3();m2v3Redraw();return;}
+  var _at=m2v3HitText(w.x,w.y);
+  if(_at&&m2v3Modo!=='mover'){m2v3SetModo('mover');m2v3SelText=_at;m2v3SelElem=null;m2v3SelCable=null;m2v3CableFrom=null;m2v3RenderProps3();m2v3Redraw();return;}
   if(m2v3Modo==='colocar'&&m2v3SelComp){
     if(m2v3SelComp==='texto'){
       var txt=prompt('Texto a agregar:','Etiqueta'); if(!txt) return;
@@ -1186,9 +1466,9 @@ function m2v3OnClick(e){
       } else {
         var sistemas=[...new Set(APP.m1.equipos.map(function(eq){return eq.sistemaNombre||eq.sistema;}))];
         if(sistemas.length){ nombre=prompt('Sistema ('+sistemas.join(', ')+')',sistemas[0])||c.label; }
-        var wattsTotal=500;
+        var wattsTotal=500; var fpTotal=0.85;
       }
-    } else { var wattsTotal=null; }
+    } else { var wattsTotal=null; var fpTotal=0.85; }
     m2v3Elems.push({id:'el'+Date.now(),tipo:tipoReal,x:Math.round((w.x-c.w/2)/10)*10,y:Math.round((w.y-c.h/2)/10)*10,w:c.w,h:c.h,estado:true,nombre:nombre,watts:wattsTotal||500,fp:fpTotal||0.85,fase:'L1'});
     m2v3Redraw(); m2v3UpdateAlertas(); return;
   }
@@ -1197,14 +1477,22 @@ function m2v3OnClick(e){
     if(term){
       if(!m2v3CableFrom){ m2v3CableFrom=term; m2v3Redraw(); }
       else if(m2v3CableFrom.elemId!==term.elemId){
-        var _newCb={id:'cb'+Date.now(),fe:m2v3CableFrom.elemId,ft:m2v3CableFrom.termId,te:term.elemId,tt:term.termId,sec:'2.5',ttype:m2v3CableFrom.ttype,fase:m2v3CableFrom.fase};
+        // Determinar ttype: usar el terminal que tenga más información (F1/F2/F3 > Fx > N > PE)
+        var _fromType=m2v3CableFrom.ttype, _toType=term.ttype;
+        var _typeRank=function(t){return t==='F1'||t==='F2'||t==='F3'?3:t==='Fx'?2:t==='N'?1:0;};
+        // El ttype del cable es el del terminal con más información
+        var _cbTtype=_typeRank(_fromType)>=_typeRank(_toType)?_fromType:_toType;
+        var _cbFase=m2v3CableFrom.fase||term.fase||null;
+        var _newCb={id:'cb'+Date.now(),fe:m2v3CableFrom.elemId,ft:m2v3CableFrom.termId,te:term.elemId,tt:term.termId,sec:'2.5',ttype:_cbTtype,fase:_cbFase};
         m2v3Cables.push(_newCb);
-        // Auto-propagate fase to destination toma when connecting a fase cable
-        if(_newCb.ttype!=='N'&&_newCb.ttype!=='PE'&&_newCb.fase){
+        // Auto-propagate fase a tomas y cargas
+        if(_cbTtype!=='N'&&_cbTtype!=='PE'){
           var _srcEl=m2v3Elems.find(function(e){return e.id===_newCb.fe;});
           var _dstEl=m2v3Elems.find(function(e){return e.id===_newCb.te;});
-          if(_dstEl&&['schuko','powercon','carga'].includes(_dstEl.tipo)&&_srcEl){
-            _dstEl.fase=_newCb.fase;
+          var _faseReal=_cbTtype==='F1'?'L1':_cbTtype==='F2'?'L2':_cbTtype==='F3'?'L3':_cbFase;
+          if(_faseReal){
+            if(_dstEl&&['schuko','powercon','carga'].includes(_dstEl.tipo)) _dstEl.fase=_faseReal;
+            if(_srcEl&&['schuko','powercon','carga'].includes(_srcEl.tipo)) _srcEl.fase=_faseReal;
           }
         }
         m2v3CableFrom=null; m2v3Redraw(); m2v3UpdateAlertas();
@@ -1290,7 +1578,8 @@ function m2v3DrawTerm(ctx,el,t){
   // Push terminal outside the component body so it's fully visible
   var _r=7/m2v3Zoom;
   if(t.side==='in')  cy -= _r;
-  if(t.side==='out') cy += _r;
+  else if(t.side==='out') cy += _r;
+  // side='none': sin offset adicional (terminal fijo en posición dy exacta)
   var col=m2TermColor(t.t,el.fase);
   var active=(m2v3CableFrom&&m2v3CableFrom.elemId===el.id&&m2v3CableFrom.termId===t.id);
   var r=7/m2v3Zoom; // Larger hit zone
@@ -1407,7 +1696,7 @@ function m2v3DrawElem(ctx,el){
       ctx.fillStyle='#FFCE07';ctx.textAlign='center';ctx.fillText('⚡',cx,cy-2);
       // Label
       ctx.font='bold '+Math.max(7,8/z)+'px sans-serif';
-      ctx.fillStyle='#fff';ctx.fillText('380V 3~',cx,cy+12);
+      ctx.fillStyle='#fff';ctx.fillText(Math.round((APP.tension||230)*Math.sqrt(3))+'V 3~',cx,cy+12);
       // Bandas de fase en la parte superior
       var phW=w/5,phColors=[N.L1,N.L2,N.L3,N.N,'#27ae60'];
       phColors.forEach(function(col,i){
@@ -1425,7 +1714,7 @@ function m2v3DrawElem(ctx,el){
       ctx.font='bold '+Math.max(14,17/z)+'px sans-serif';
       ctx.fillStyle='#FFCE07';ctx.textAlign='center';ctx.fillText('⚡',cx,cy-4);
       ctx.font='bold '+Math.max(7,8/z)+'px sans-serif';
-      ctx.fillStyle='#fff';ctx.fillText('220V ~',cx,cy+10);
+      ctx.fillStyle='#fff';ctx.fillText((APP.tension||230)+'V ~',cx,cy+10);
       // Bandas F/N/PE
       [N.L1,N.N,'#27ae60'].forEach(function(col,i){
         ctx.fillStyle=col;ctx.fillRect(x+(i*(w/3))+1,y+2,(w/3)-2,6);
@@ -1618,6 +1907,11 @@ function m2v3DrawElem(ctx,el){
       ctx.fillStyle=faseCol;ctx.beginPath();m2RR(ctx,cx-14,y+h-16,28,12,3);ctx.fill();
       ctx.fillStyle='#fff';ctx.font='bold '+Math.max(5,6/z)+'px sans-serif';
       ctx.fillText(el.fase||'—',cx,y+h-7);
+      // Indicador conexión completa
+      var _tF=false,_tN=false,_tPE=false;
+      m2v3Cables.forEach(function(cb){if(cb.te!==el.id&&cb.fe!==el.id)return;if(cb.ttype==='F1'||cb.ttype==='F2'||cb.ttype==='F3'||cb.ttype==='Fx')_tF=true;if(cb.ttype==='N')_tN=true;if(cb.ttype==='PE')_tPE=true;});
+      var _ci=(_tF&&_tN&&_tPE)?'#009A44':(_tF||_tN)?'#E07B00':'#CC2200';
+      ctx.beginPath();ctx.arc(x+w-8/z,y+8/z,5/z,0,Math.PI*2);ctx.fillStyle=_ci;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5/z;ctx.stroke();
       break;
     }
   }
@@ -1813,13 +2107,16 @@ window.m2v3UpdateFases = function(){
     var phase=findPhase(carga.id, {});
     if(phase&&fi[phase]){
       fi[phase].w+=watts;
-      fi[phase].a+=watts/(220*fp); // same formula as calcA in M1
+      fi[phase].a+=watts/((APP.tension||230)*fp); // same formula as calcA in M1
       fi[phase].cargas.push(carga.nombre||'Carga');
     }
   });
 
   m2v3FaseInfo=fi;
-  var genAmp=40;
+  // Leer capacidad por fase desde el tablero raíz trifásico
+  var _tbRaiz=APP.m1.tableros.find(function(t){return !t.parentId&&t.fase==='trifasico'});
+  var _capTotal=_tbRaiz?(_tbRaiz.amperaje||40):40;
+  var genAmp=Math.round(_capTotal/3*10)/10; // capacidad por fase = total / 3
   var el=document.getElementById('m2v3-fases'); if(!el) return;
   var N=NORMA_COLORES[APP.norma]||NORMA_COLORES.chilena;
   var normaNames=APP.norma==='chilena'?{L1:'negro',L2:'rojo',L3:'azul'}:{L1:'marrón',L2:'negro',L3:'gris'};
@@ -1844,28 +2141,112 @@ window.m2v3UpdateFases = function(){
   }).join('');
 };
 
+window.m2v3DiagnosticarCargas = function() {
+  var diagnosticos = [], todasCompletas = true, hayCargas = false;
+
+  // Sube por la cadena de cables desde un nodo, siguiendo SOLO cables del ttype buscado.
+  // Retorna true si llega a un elemento cuyo tipo esté en fuentesTipos.
+  function hayRuta(fromId, ttypesBuscados, fuentesTipos, visited) {
+    if (visited[fromId]) return false;
+    visited[fromId] = true;
+    var el = m2v3Elems.find(function(e){ return e.id === fromId; });
+    if (el && fuentesTipos.indexOf(el.tipo) >= 0) return true;
+    for (var i = 0; i < m2v3Cables.length; i++) {
+      var cb = m2v3Cables[i];
+      if (ttypesBuscados.indexOf(cb.ttype) < 0) continue; // solo cables del tipo buscado
+      var otherId = cb.te === fromId ? cb.fe : cb.fe === fromId ? cb.te : null;
+      if (!otherId || visited[otherId]) continue;
+      var vCopy = {}; for (var k in visited) vCopy[k] = true;
+      if (hayRuta(otherId, ttypesBuscados, fuentesTipos, vCopy)) return true;
+    }
+    return false;
+  }
+
+  // Verifica si un conductor llega a la carga Y tiene ruta hasta una fuente real.
+  function conductorLlega(cargaId, ttypesBuscados, fuentesTipos) {
+    for (var i = 0; i < m2v3Cables.length; i++) {
+      var cb = m2v3Cables[i];
+      if (cb.te !== cargaId && cb.fe !== cargaId) continue;
+      if (ttypesBuscados.indexOf(cb.ttype) < 0) continue;
+      var otherId = cb.te === cargaId ? cb.fe : cb.te;
+      var visited = {}; visited[cargaId] = true;
+      if (hayRuta(otherId, ttypesBuscados, fuentesTipos, visited)) return true;
+    }
+    return false;
+  }
+
+  var FUENTES_FASE = ['dis_10','dis_16','dis_20','dif_2p','acom_tri','acom_mono','int_gral'];
+  var FUENTES_N    = ['acom_tri','acom_mono','int_gral','dif_4p','dif_2p'];
+  var FUENTES_PE   = ['tierra'];
+
+  // Los disyuntores 1P usan ttype Fx — incluirlo en la busqueda de fase
+  var TTYPES_FASE = ['F1','F2','F3','Fx'];
+
+  m2v3Elems.forEach(function(el) {
+    if (el.tipo !== 'carga') return;
+    hayCargas = true;
+
+    var tieneFase   = conductorLlega(el.id, TTYPES_FASE, FUENTES_FASE);
+    var tieneNeutro = conductorLlega(el.id, ['N'], FUENTES_N);
+    var tieneTierra = conductorLlega(el.id, ['PE'], FUENTES_PE);
+
+    var faseRecibida = null;
+    for (var i = 0; i < m2v3Cables.length; i++) {
+      var cb = m2v3Cables[i];
+      if (cb.te !== el.id && cb.fe !== el.id) continue;
+      if (cb.ttype==='F1') { faseRecibida='L1'; break; }
+      if (cb.ttype==='F2') { faseRecibida='L2'; break; }
+      if (cb.ttype==='F3') { faseRecibida='L3'; break; }
+      if (cb.ttype==='Fx' && cb.fase) { faseRecibida=cb.fase; break; }
+    }
+
+    var completo = tieneFase && tieneNeutro && tieneTierra;
+    if (!completo) todasCompletas = false;
+    diagnosticos.push({
+      nombre: el.nombre||'Carga', watts: el.watts||0, fase: faseRecibida||'—',
+      tieneFase: tieneFase, tieneNeutro: tieneNeutro, tieneTierra: tieneTierra,
+      completo: completo
+    });
+  });
+  return {diagnosticos:diagnosticos, todasCompletas:todasCompletas, hayCargas:hayCargas};
+};
+
+
 window.m2v3UpdateAlertas = function(){
   m2v3UpdateFases();
-  // Use real traced values from m2v3FaseInfo (set by UpdateFases)
-  var fi={L1:m2v3FaseInfo.L1.a,L2:m2v3FaseInfo.L2.a,L3:m2v3FaseInfo.L3.a};
-  var vals=[fi.L1,fi.L2,fi.L3],maxA=Math.max.apply(null,vals),minA=Math.min.apply(null,vals);
-  var h='',ok=true;
-  if(!m2v3Elems.find(function(e){return e.tipo==='dif_4p'||e.tipo==='dif_2p';})&&m2v3Elems.length>1){ok=false;h+='<div class="abox adanger">Sin diferencial en el tablero.</div>';}
-  if(!m2v3Elems.find(function(e){return e.tipo==='tierra';})&&m2v3Elems.length>1){ok=false;h+='<div class="abox awarn">Sin barra PE — conectar tierra desde barra PE a cada toma.</div>';}
-  ['L1','L2','L3'].forEach(function(f){if(fi[f]>40){ok=false;h+='<div class="abox adanger">Sobrecarga fase '+f+': '+fi[f].toFixed(1)+'A.</div>';}else if(fi[f]>32) h+='<div class="abox awarn">Fase '+f+' al '+Math.round((fi[f]/40)*100)+'%.</div>';});
-  if(maxA>0&&(maxA-minA)>maxA*0.4){ok=false;h+='<div class="abox awarn">Desbalance de fases: diferencia de '+(maxA-minA).toFixed(1)+'A.</div>';}
-  // Alertas de sección de cable
-  m2v3Cables.forEach(function(cb){
-    var maxI=M2_SEC[cb.sec]||20;
-    var destEl=m2v3Elems.find(function(e){return e.id===cb.te;});
-    if(destEl&&destEl.tipo==='carga'){
-      var a=(parseFloat(destEl.watts)||0)/220;
-      if(a>maxI){ok=false;h+='<div class="abox adanger">Cable '+cb.sec+'mm² (máx '+maxI+'A) sobrecargado: '+a.toFixed(1)+'A hacia '+destEl.nombre+'.</div>';}
-    }
+  var h = '';
+  var diag = m2v3DiagnosticarCargas();
+  if (!diag.hayCargas) {
+    h += '<div class="abox aneutral">Coloca cargas en el tablero y conéctalas (Fase, Neutro y Tierra).</div>';
+  } else if (!diag.todasCompletas) {
+    h += '<div class="abox awarn">⚠️ Hay cargas con conexiones incompletas.</div>';
+  } else {
+    h += '<div class="abox aok">✅ Todas las cargas tienen F, N y PE conectados.</div>';
+  }
+  diag.diagnosticos.forEach(function(d) {
+    var iF=d.tieneFase?'<span style="color:#009A44">●F</span>':'<span style="color:#CC2200">○F</span>';
+    var iN=d.tieneNeutro?'<span style="color:#009A44">●N</span>':'<span style="color:#CC2200">○N</span>';
+    var iP=d.tieneTierra?'<span style="color:#009A44">●PE</span>':'<span style="color:#E07B00">○PE</span>';
+    var fs=d.fase!=='—'?' <span style="color:var(--text3)">['+d.fase+']</span>':'';
+    h+='<div class="abox '+(d.completo?'aok':'awarn')+'" style="font-size:12px;padding:8px 12px">'+(d.completo?'✅':'⚠️')+' <strong>'+d.nombre+'</strong> ('+d.watts+'W) → '+iF+' · '+iN+' · '+iP+fs+'</div>';
   });
-  if(ok&&m2v3Elems.length>2){h='<div class="abox aok">Tablero OK — protecciones, fases y secciones de cable correctas.</div>';APP.progreso.m2=true;updateGlobalProg();}
-  if(!m2v3Elems.length) h='<div class="abox aneutral">Selecciona un componente y haz clic en el canvas. Rueda = zoom, Espacio+arrastrar = mover vista. En modo cable, haz clic en los terminales de dos componentes para conectarlos.</div>';
-  var ale=document.getElementById('m2v3-alertas'); if(ale) ale.innerHTML=h;
+  var fi=window.m2v3FaseInfo;
+  if (fi) {
+    var vals=[fi.L1.a,fi.L2.a,fi.L3.a].filter(function(v){return v>0;});
+    if (vals.length>1) {
+      var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals);
+      var desbal=mx>0?(mx-mn)/mx*100:0;
+      if (desbal>40) h+='<div class="abox awarn">⚠️ Desbalance: '+desbal.toFixed(0)+'%. Redistribuye cargas.</div>';
+    }
+    var _tbRaizA=APP.m1.tableros.find(function(t){return !t.parentId&&t.fase==='trifasico'});
+    var _genAmpA=_tbRaizA?Math.round(_tbRaizA.amperaje/3*10)/10:40;
+    ['L1','L2','L3'].forEach(function(f){
+      if(fi[f].a>_genAmpA) h+='<div class="abox adanger">🔴 Fase '+f+' sobrecargada: '+fi[f].a.toFixed(1)+'A (máx '+_genAmpA+'A)</div>';
+    });
+  }
+  var w=document.getElementById('m2v3-alertas'); if(w) w.innerHTML=h;
+  APP.progreso.m2=diag.hayCargas&&diag.todasCompletas;
+  updateGlobalProg();
 };
 
 // ── PROPIEDADES ───────────────────────────────────────────────────
@@ -1901,7 +2282,7 @@ window.m2v3RenderProps3 = function(){
   var hasW=el.tipo==='carga';
   w.innerHTML='<div class="card" style="margin-top:8px"><div class="card-title">Propiedades</div>'+
     '<div class="field"><label>Nombre</label><input value="'+(el.nombre||'')+'" onchange="m2v3SelElem.nombre=this.value;m2v3Redraw()"/></div>'+
-    (hasFase?'<div class="field"><label>Fase</label><select onchange="m2v3SelElem.fase=this.value;m2v3Redraw();m2v3UpdateAlertas()"><option value="L1"'+(el.fase==='L1'?' selected':'')+'>L1</option><option value="L2"'+(el.fase==='L2'?' selected':'')+'>L2</option><option value="L3"'+(el.fase==='L3'?' selected':'')+'>L3</option></select></div>':'')+
+    (hasFase&&el.tipo!=='carga'?'<div class="field"><label>Fase</label><select onchange="m2v3SelElem.fase=this.value;m2v3Redraw();m2v3UpdateAlertas()"><option value="L1"'+(el.fase==='L1'?' selected':'')+'>L1</option><option value="L2"'+(el.fase==='L2'?' selected':'')+'>L2</option><option value="L3"'+(el.fase==='L3'?' selected':'')+'>L3</option></select></div>':'')+(el.tipo==='carga'?'<div class="abox aneutral" style="font-size:11px;padding:6px 10px">Fase detectada automáticamente desde el cable conectado.</div>':'')+
     (hasW?'<div class="field"><label>Potencia (W)</label><input type="number" value="'+(el.watts||0)+'" onchange="m2v3SelElem.watts=parseInt(this.value)||0;m2v3Redraw();m2v3UpdateAlertas()"/></div>'+
     '<div class="field"><label>Factor de potencia (FP)</label><input type="number" min="0.5" max="1" step="0.01" value="'+(parseFloat(el.fp)||0.85).toFixed(2)+'" onchange="m2v3SelElem.fp=parseFloat(this.value)||0.85;m2v3Redraw();m2v3UpdateFases()"/></div>':'')+
     (hasEstado?'<div class="field"><label>Estado</label><select onchange="m2v3SelElem.estado=this.value===\'true\';m2v3Redraw();m2v3UpdateFases()"><option value="true"'+(el.estado!==false?' selected':'')+'>Cerrado (ON)</option><option value="false"'+(el.estado===false?' selected':'')+'>Abierto (OFF)</option></select></div>':'')+
@@ -1966,6 +2347,7 @@ window.m2v3NormalizarElementos = function(){
 };
 
 window.m2v3CargarEjemplo = function(){
+  if(m2v3Elems.length>0&&!confirm('¿Cargar el ejemplo? Se sobrescribirá el tablero.'))return;
   m2v3Limpiar();
   m2v3Elems=[
     // Fila 1: Acometida centrada arriba
@@ -1985,10 +2367,10 @@ window.m2v3CargarEjemplo = function(){
     // Barra PE (horizontal, al lado)
     {id:'pe',tipo:'tierra',   x:450,y:300, w:150,h:32, nombre:'Barra PE',    fase:null, estado:true,watts:null},
     // Fila 5: Cargas
-    {id:'c1',tipo:'carga',    x:30, y:590, w:88, h:70, nombre:'PA + Sub',    fase:'L1',estado:true,watts:1850},
-    {id:'c2',tipo:'carga',    x:128,y:590, w:88, h:70, nombre:'FOH + Mon',   fase:'L2',estado:true,watts:1045},
-    {id:'c3',tipo:'carga',    x:226,y:590, w:88, h:70, nombre:'Backline',    fase:'L3',estado:true,watts:610},
-    {id:'c4',tipo:'carga',    x:324,y:590, w:88, h:70, nombre:'Iluminación', fase:'L1',estado:true,watts:1284},
+    {id:'c1',tipo:'carga',    x:30, y:590, w:88, h:70, nombre:'PA + Sub',    fase:'L1',estado:true,watts:1850,fp:0.95},
+    {id:'c2',tipo:'carga',    x:128,y:590, w:88, h:70, nombre:'FOH + Mon',   fase:'L2',estado:true,watts:1045,fp:0.87},
+    {id:'c3',tipo:'carga',    x:226,y:590, w:88, h:70, nombre:'Backline',    fase:'L3',estado:true,watts:610,fp:0.75},
+    {id:'c4',tipo:'carga',    x:324,y:590, w:88, h:70, nombre:'Iluminación', fase:'L1',estado:true,watts:1284,fp:0.82},
     {id:'tx1',tipo:'texto',   x:460,y:200, w:1,  h:1,  nombre:'Tierra: PE → tomas directamente'},
   ];
   m2v3Cables=[
@@ -2031,7 +2413,6 @@ window.m2v3CargarEjemplo = function(){
     {id:'dp3',fe:'s3',ft:'PEo',te:'c3',tt:'PE',sec:'2.5',ttype:'PE',fase:null},
     {id:'dp4',fe:'s4',ft:'PEo',te:'c4',tt:'PE',sec:'2.5',ttype:'PE',fase:null},
     // PE: acometida → barra PE
-    {id:'pe0',fe:'ac',ft:'PE',te:'pe',tt:'P3',sec:'10',ttype:'PE',fase:null},
     ];
   m2v3Texts=[{id:'tx2',x:400,y:60,text:'Norma: '+APP.norma}];
   m2v3Redraw();m2v3UpdateAlertas();
@@ -2041,280 +2422,155 @@ window.m2v3CargarEjemplo = function(){
 
 
 // ══════════════════════════════════════════════════════════════════
-// EXPORTACIÓN DOCX (via docx-js CDN en el navegador)
+// EXPORTACIÓN PDF (impresión nativa del navegador)
 // ══════════════════════════════════════════════════════════════════
 
-window.exportarDOCX = async () => {
-  // Verificar que docx esté disponible
-  if (typeof docx === 'undefined') {
-    showToast('Cargando librería DOCX (requiere internet)...', 'ok');
-    try {
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js';
-        s.onload = resolve;
-        s.onerror = () => reject(new Error('No se pudo cargar la librería DOCX. Verifica tu conexión a internet.'));
-        document.head.appendChild(s);
-      });
-      await new Promise(r=>setTimeout(r,500));
-    } catch(loadErr) {
-      showToast(loadErr.message, 'danger');
-      return;
-    }
-  }
-
-  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-          AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
-          VerticalAlign, PageBreak, LevelFormat, NumberFormat } = docx;
-
+window.exportarPDF = () => {
   const A = APP;
   const alumno = A.alumno || {};
   const fecha = alumno.fecha || new Date().toLocaleDateString('es-CL');
-
-  const border = { style: BorderStyle.SINGLE, size: 1, color: 'BBBBBB' };
-  const borders = { top:border, bottom:border, left:border, right:border };
-  const cellM = { top:80, bottom:80, left:120, right:120 };
-
-  const TW = 9360; // A4 con márgenes 1"
-  const mkCell = (text, opts={}) => new TableCell({
-    borders, margins: cellM,
-    width: { size: opts.w || Math.round(TW/4), type: WidthType.DXA },
-    shading: opts.bg ? { fill: opts.bg, type: ShadingType.CLEAR } : undefined,
-    verticalAlign: VerticalAlign.CENTER,
-    children: [new Paragraph({
-      alignment: opts.center ? AlignmentType.CENTER : AlignmentType.LEFT,
-      children: [new TextRun({ text: String(text||''), bold: !!opts.bold, size: opts.size||18, color: opts.color||'000000', font:'Arial' })]
-    })]
-  });
-
-  const h1 = (txt) => new Paragraph({ heading: HeadingLevel.HEADING_1, children:[new TextRun({text:txt,bold:true,size:32,color:'1F3A6E',font:'Arial'})] });
-  const h2 = (txt) => new Paragraph({ heading: HeadingLevel.HEADING_2, children:[new TextRun({text:txt,bold:true,size:26,color:'2E75B6',font:'Arial'})] });
-  const p  = (txt, opts={}) => new Paragraph({ spacing:{after:80}, children:[new TextRun({text:String(txt||''),size:opts.size||18,bold:!!opts.bold,color:opts.color||'333333',font:'Arial'})] });
-  const sep = () => new Paragraph({ border:{ bottom:{style:BorderStyle.SINGLE,size:4,color:'2E75B6',space:1} }, children:[new TextRun('')] });
-  const br  = () => new Paragraph({ children:[new PageBreak()] });
-
-  // ── PORTADA ───────────────────────────────────────────────────
-  const portada = [
-    new Paragraph({spacing:{before:800,after:200}, alignment:AlignmentType.CENTER,
-      children:[new TextRun({text:'SimulElec',bold:true,size:56,color:'1F3A6E',font:'Arial'})]}),
-    new Paragraph({spacing:{after:160}, alignment:AlignmentType.CENTER,
-      children:[new TextRun({text:'Simulador de Electricidad en Sonido en Vivo',size:28,color:'2E75B6',font:'Arial'})]}),
-    sep(),
-    new Paragraph({spacing:{before:300,after:80}, alignment:AlignmentType.CENTER,
-      children:[new TextRun({text:'Informe de actividades — Unidad II',size:22,bold:true,font:'Arial'})]}),
-    p(''),
-    new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[2800,6560],
-      rows:[
-        new TableRow({children:[mkCell('Estudiante',{w:2800,bg:'EBF3FB',bold:true}), mkCell(alumno.nombre||'(sin nombre)',{w:6560})]}),
-        new TableRow({children:[mkCell('Fecha',{w:2800,bg:'EBF3FB',bold:true}), mkCell(fecha,{w:6560})]}),
-        new TableRow({children:[mkCell('Asignatura',{w:2800,bg:'EBF3FB',bold:true}), mkCell(alumno.asignatura||'MUS00075',{w:6560})]}),
-        new TableRow({children:[mkCell('Norma aplicada',{w:2800,bg:'EBF3FB',bold:true}), mkCell(A.norma==='chilena'?'Norma chilena SEC / RICT':'Norma IEC 60364 (europea)',{w:6560})]}),
-      ]
-    }),
-    br(),
-  ];
-
-  // ── MÓDULO 1 — FICHAS ─────────────────────────────────────────
   const equipos = A.m1?.equipos || [];
-  const fichaRows = [
-    new TableRow({ children:[
-      mkCell('Equipo',{w:2000,bg:'D5E8F0',bold:true}),
-      mkCell('Sistema',{w:1000,bg:'D5E8F0',bold:true}),
-      mkCell('Potencia',{w:900,bg:'D5E8F0',bold:true,center:true}),
-      mkCell('Corriente',{w:900,bg:'D5E8F0',bold:true,center:true}),
-      mkCell('Tipo',{w:900,bg:'D5E8F0',bold:true,center:true}),
-      mkCell('Conector',{w:900,bg:'D5E8F0',bold:true,center:true}),
-      mkCell('FP',{w:600,bg:'D5E8F0',bold:true,center:true}),
-      mkCell('Fuente FP',{w:660,bg:'D5E8F0',bold:true,center:true}),
-      mkCell('Protección',{w:500,bg:'D5E8F0',bold:true,center:true}),
-    ]})
-  ];
-  const colW=[2000,1000,900,900,900,900,600,660,500];
-  equipos.forEach((eq,i)=>{
-    const bg = i%2===0 ? 'FFFFFF' : 'F5FAFF';
-    const w2=calcW(eq), a=calcA(eq);
-    fichaRows.push(new TableRow({ children:[
-      mkCell(eq.nombre,{w:colW[0],bg}),
-      mkCell(eq.sistemaNombre||eq.sistema,{w:colW[1],bg}),
-      mkCell(w2.toFixed(0)+'W',{w:colW[2],bg,center:true}),
-      mkCell(a.toFixed(1)+'A',{w:colW[3],bg,center:true}),
-      mkCell(eq.tipo,{w:colW[4],bg,center:true}),
-      mkCell(eq.conector,{w:colW[5],bg,center:true}),
-      mkCell(eq.fp,{w:colW[6],bg,center:true}),
-      mkCell(eq.fpFuente||'supuesto',{w:colW[7],bg,center:true,color:eq.fpFuente==='ficha'?'1D6A3A':'8B5E00'}),
-      mkCell(eq.proteccion,{w:colW[8],bg,center:true}),
-    ]}));
-  });
-  const totalW2=equipos.reduce((s,e)=>s+calcW(e),0);
-  const totalA2=equipos.reduce((s,e)=>s+calcA(e),0);
-  fichaRows.push(new TableRow({ children:[
-    mkCell('TOTAL',{w:colW[0],bg:'EBF3FB',bold:true}),
-    mkCell('',{w:colW[1],bg:'EBF3FB'}),
-    mkCell(totalW2.toFixed(0)+'W',{w:colW[2],bg:'EBF3FB',bold:true,center:true}),
-    mkCell(totalA2.toFixed(1)+'A',{w:colW[3],bg:'EBF3FB',bold:true,center:true}),
-    mkCell('',{w:colW[4],bg:'EBF3FB'}),mkCell('',{w:colW[5],bg:'EBF3FB'}),
-    mkCell('',{w:colW[6],bg:'EBF3FB'}),mkCell('',{w:colW[7],bg:'EBF3FB'}),mkCell('',{w:colW[8],bg:'EBF3FB'}),
-  ]}));
+  const tableros = A.m1?.tableros || [];
 
-  // ── MÓDULO 1 — TABLERO ────────────────────────────────────────
-  const circ = A.m1?.circuitos || [];
-  const tb   = A.m1?.tablero || {};
-  const genAmp=tb.general||40, vRed=tb.tension||220, long=tb.longitud||25, secc=tb.seccion||4;
-  const rho=0.0175, caidaV=(2*rho*long*totalA2/secc), caidaPct=(caidaV/vRed)*100;
-  const circRows = [
-    new TableRow({children:[
-      mkCell('Circuito',{w:2200,bg:'D5E8F0',bold:true}),
-      mkCell('Disyuntor',{w:1000,bg:'D5E8F0',bold:true,center:true}),
-      mkCell('Equipos asignados',{w:3200,bg:'D5E8F0',bold:true}),
-      mkCell('Consumo',{w:1080,bg:'D5E8F0',bold:true,center:true}),
-      mkCell('Uso %',{w:880,bg:'D5E8F0',bold:true,center:true}),
-    ]})
-  ];
-  circ.forEach((c,i)=>{
-    const bg=i%2===0?'FFFFFF':'F5FAFF';
-    const amps=ampsCirc(c,equipos), watts=wattsCirc(c,equipos), pct=pctCirc(c,equipos);
-    const eqNames = c.equipos.map(id=>equipos.find(e=>e.id===id)?.nombre||'?').join(', ');
-    const pctColor=pct>100?'CC0000':pct>80?'CC6600':'1D6A3A';
-    circRows.push(new TableRow({children:[
-      mkCell(c.nombre,{w:2200,bg}),
-      mkCell(c.amp+'A',{w:1000,bg,center:true}),
-      mkCell(eqNames||'—',{w:3200,bg}),
-      mkCell(watts.toFixed(0)+'W / '+amps.toFixed(1)+'A',{w:1080,bg,center:true}),
-      mkCell(Math.round(pct)+'%',{w:880,bg,center:true,bold:true,color:pctColor}),
-    ]}));
-  });
+  // Calcular totales
+  const totalW = equipos.reduce((s,e) => s + calcW(e), 0);
+  const totalA = equipos.reduce((s,e) => s + calcA(e), 0);
 
-  // M3 eliminado — sin registro de montaje
-  const reg = [];
-  const regRows = [
-    new TableRow({children:[
-      mkCell('Escenario',{w:1400,bg:'FFE8D5',bold:true}),
-      mkCell('Elemento',{w:2000,bg:'FFE8D5',bold:true}),
-      mkCell('Estado observado',{w:1600,bg:'FFE8D5',bold:true}),
-      mkCell('Resultado',{w:1000,bg:'FFE8D5',bold:true,center:true}),
-      mkCell('Medida correctiva',{w:2400,bg:'FFE8D5',bold:true}),
-      mkCell('Hora',{w:560,bg:'FFE8D5',bold:true,center:true}),
-    ]})
-  ];
-  reg.forEach((r,i)=>{
-    const bg=i%2===0?'FFFFFF':'FFF8F5';
-    const resColor=r.resultado==='APTO'?'1D6A3A':'CC0000';
-    regRows.push(new TableRow({children:[
-      mkCell(r.escenario,{w:1400,bg}),
-      mkCell(r.elemento,{w:2000,bg}),
-      mkCell(r.estado,{w:1600,bg}),
-      mkCell(r.resultado,{w:1000,bg,center:true,bold:true,color:resColor}),
-      mkCell(r.correctiva||'—',{w:2400,bg}),
-      mkCell(r.hora||'',{w:560,bg,center:true}),
-    ]}));
-  });
+  // Generar filas de equipos
+  const filasEquipos = equipos.map((eq,i) => {
+    const w = calcW(eq), a = calcA(eq);
+    const bg = i%2===0 ? '#ffffff' : '#f5faff';
+    return `<tr style="background:${bg}">
+      <td>${eq.nombre||'—'}</td>
+      <td>${eq.sistemaNombre||eq.sistema||'—'}</td>
+      <td style="text-align:center">${w.toFixed(0)}W</td>
+      <td style="text-align:center">${a.toFixed(2)}A</td>
+      <td style="text-align:center">${eq.tipo||'—'}</td>
+      <td style="text-align:center">${eq.conector||'—'}</td>
+      <td style="text-align:center">${eq.fp||'—'}</td>
+      <td style="text-align:center">${eq.proteccion||'—'}</td>
+    </tr>`;
+  }).join('');
 
-  // ── MÓDULO 4 ─────────────────────────────────────────────────
-  const estRes = A.m4?.estResueltas || {};
-  const glResp = A.m4?.glResp || {};
-  const M4_EST_NAMES = ['Cable con falla','Conector PowerCon','Ground loop activo','Polaridad y orden de encendido'];
-  const GL_QUIZ_C = [1,1,1];
-  const glOk = Object.values(glResp).filter((v,i)=>v===GL_QUIZ_C[i]).length;
+  // Generar secciones de tableros
+  const seccionesTableros = tableros.map(tb => {
+    const tbA = m1GetAmpsTotal(tb);
+    const tbW = m1GetWattsTotal(tb);
+    const cap = m1GetCapacidadEfectiva(tb);
+    const pct = Math.min(110, (tbA/cap)*100);
+    const nivel = m1GetNivel(tb);
+    const etq = m1GetEtiquetaCapacidad(tb).replace(' (A)','');
+    const fLabel = {trifasico:'Trifásico',monofasico:'Monofásico',L1:'Fase L1',L2:'Fase L2',L3:'Fase L3'}[tb.fase]||tb.fase||'';
 
-  // ── EVALUACIÓN ────────────────────────────────────────────────
-  const n1=equipos.length>0?1:0;
-  const n2=A.m2?.elems?.length>2?1:0;
-  const n3=Object.keys(A.m3?.inspecciones||{}).length;
-  const n3t=A.m3?.escActual?.elems?.length||1;
-  const n4Est=Object.keys(estRes).length;
-  const pctTotal=Math.round(((n1+n2+(n3/n3t)+(n4Est/4)+(glOk/3))/5)*100);
-  const evalColor=pctTotal>=80?'1D6A3A':pctTotal>=60?'CC6600':'CC0000';
+    const filasCirc = tb.circuitos.map((c,i) => {
+      const cA = ampsCirc(c, equipos), cW = wattsCirc(c, equipos);
+      const p = Math.min(110, (cA/c.amp)*100);
+      const col = p>100?'#CC2200':p>80?'#E07B00':'#009A44';
+      const eqs = c.equipos.map(id => { const e=equipos.find(x=>x.id===id); return e?e.nombre:''; }).filter(Boolean).join(', ');
+      const bg = i%2===0?'#ffffff':'#f5faff';
+      return `<tr style="background:${bg}">
+        <td>${c.nombre}</td>
+        <td style="text-align:center">${c.amp}A</td>
+        <td style="text-align:center">${cW.toFixed(0)}W</td>
+        <td style="text-align:center">${cA.toFixed(2)}A</td>
+        <td style="text-align:center;color:${col};font-weight:bold">${Math.round(p)}%</td>
+        <td style="font-size:10px">${eqs||'—'}</td>
+      </tr>`;
+    }).join('');
 
-  const evalRows = [
-    new TableRow({children:[mkCell('Ítem',{w:3000,bg:'EDE8FF',bold:true}),mkCell('Módulo',{w:800,bg:'EDE8FF',bold:true,center:true}),mkCell('Resultado',{w:2200,bg:'EDE8FF',bold:true,center:true}),mkCell('Estado',{w:1360,bg:'EDE8FF',bold:true,center:true})]}),
-    new TableRow({children:[mkCell('Fichas técnicas registradas',{w:3000}),mkCell('M1',{w:800,center:true}),mkCell(equipos.length+' equipo(s)',{w:2200,center:true}),mkCell(n1?'Completo':'Pendiente',{w:1360,center:true,bold:true,color:n1?'1D6A3A':'CC0000'})]}),
-    new TableRow({children:[mkCell('Tablero visual diseñado',{w:3000,bg:'F8F5FF'}),mkCell('M2',{w:800,bg:'F8F5FF',center:true}),mkCell((A.m2?.elems?.length||0)+' componentes',{w:2200,bg:'F8F5FF',center:true}),mkCell(n2?'Completo':'Pendiente',{w:1360,bg:'F8F5FF',center:true,bold:true,color:n2?'1D6A3A':'CC0000'})]}),
-    new TableRow({children:[mkCell('Inspecciones de montaje',{w:3000}),mkCell('M3',{w:800,center:true}),mkCell(n3+' / '+n3t+' elementos',{w:2200,center:true}),mkCell(n3>=n3t?'Completo':'En progreso',{w:1360,center:true,bold:true,color:n3>=n3t?'1D6A3A':'CC6600'})]}),
-    new TableRow({children:[mkCell('Estaciones de fallas',{w:3000,bg:'F8F5FF'}),mkCell('M4',{w:800,bg:'F8F5FF',center:true}),mkCell(n4Est+' / 4 resueltas',{w:2200,bg:'F8F5FF',center:true}),mkCell(n4Est===4?'Completo':'En progreso',{w:1360,bg:'F8F5FF',center:true,bold:true,color:n4Est===4?'1D6A3A':'CC6600'})]}),
-    new TableRow({children:[mkCell('Quiz ground loop',{w:3000}),mkCell('M4',{w:800,center:true}),mkCell(glOk+' / 3 correctas',{w:2200,center:true}),mkCell(glOk===3?'Completo':'En progreso',{w:1360,center:true,bold:true,color:glOk===3?'1D6A3A':'CC6600'})]}),
-  ];
+    const indentStr = '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(nivel);
+    return `
+      <div class="pdf-section">
+        <h3>${indentStr}${tb.nombre} <span style="font-weight:normal;font-size:12px">(${fLabel})</span></h3>
+        <div class="pdf-stats">
+          <div class="pdf-stat"><div class="pdf-stat-val">${tbW.toFixed(0)}W</div><div class="pdf-stat-lbl">Potencia</div></div>
+          <div class="pdf-stat"><div class="pdf-stat-val">${tbA.toFixed(2)}A</div><div class="pdf-stat-lbl">Corriente</div></div>
+          <div class="pdf-stat"><div class="pdf-stat-val">${cap.toFixed(1)}A</div><div class="pdf-stat-lbl">${etq}</div></div>
+          <div class="pdf-stat"><div class="pdf-stat-val" style="color:${pct>100?'#CC2200':pct>80?'#E07B00':'#009A44'}">${Math.round(pct)}%</div><div class="pdf-stat-lbl">Uso ${fLabel}</div></div>
+        </div>
+        <table class="pdf-table">
+          <thead><tr><th>Circuito</th><th>Disyuntor</th><th>Potencia</th><th>Corriente</th><th>Uso</th><th>Equipos asignados</th></tr></thead>
+          <tbody>${filasCirc}</tbody>
+        </table>
+      </div>`;
+  }).join('');
 
-  // ── BUILD DOCUMENT ────────────────────────────────────────────
-  const children = [
-    ...portada,
-    h1('1. Fichas técnicas de equipos'),
-    p(`Evento con ${equipos.length} equipos registrados. Potencia total: ${totalW2.toFixed(0)}W / Corriente total: ${totalA2.toFixed(1)}A.`),
-    p(''),
-    new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:colW, rows: fichaRows }),
-    p(''),
-    sep(),
-    h1('2. Tablero de cargas'),
-    p(`Disyuntor general: ${genAmp}A. Tensión: ${vRed}V. Tendido: ${long}m. Sección: ${secc}mm². Caída de tensión: ${caidaV.toFixed(2)}V (${caidaPct.toFixed(2)}%) — ${caidaPct<=3?'APTO ✓':'NO APTO ✗'}.`),
-    p(''),
-    new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[2200,1000,3200,1080,880], rows: circRows }),
-    p(''),
-    sep(),
-    h1('3. Esquema del tablero'),
-    p('(Diseñado en el Módulo 2 — Tablero visual interactivo)'),
-    p(`Norma de colores aplicada: ${APP.norma==='chilena'?'Norma chilena SEC/RICT (L1=negro, L2=rojo, L3=azul, N=blanco, PE=verde/amarillo)':'Norma IEC 60364 europea (L1=marrón, L2=negro, L3=gris, N=azul, PE=verde/amarillo)'}.`),
-    p(`Componentes en tablero: ${A.m2?.elems?.length||0}. Cables trazados: ${A.m2?.cables?.length||0}.`),
-    p(''),
-    sep(),
-    h1('4. Registro de inspecciones — Módulo 3'),
-    p(reg.length ? `Total de inspecciones realizadas: ${reg.length}.` : 'Sin inspecciones registradas.'),
-    p(''),
-    ...(reg.length ? [new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[1400,2000,1600,1000,2400,560], rows: regRows }), p('')] : []),
-    sep(),
-    h1('5. Resultados Módulo 4 — Fallas y ground loop'),
-    p('Estaciones completadas:'),
-    ...M4_EST_NAMES.map((n,i) => p(`${i+1}. ${n}: ${estRes['est'+(i+1)]?'✓ Resuelta':'○ Pendiente'}`, {color: estRes['est'+(i+1)]?'1D6A3A':'CC6600'})),
-    p(''),
-    p(`Quiz ground loop: ${glOk}/3 respuestas correctas.`),
-    p(''),
-    sep(),
-    h1('6. Evaluación final'),
-    new Paragraph({spacing:{before:200,after:200}, alignment:AlignmentType.CENTER,
-      children:[new TextRun({text:`${pctTotal}%`, bold:true, size:72, color:evalColor, font:'Arial'})]}),
-    p(''),
-    new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[3000,800,2200,1360], rows: evalRows }),
-    p(''),
-    p(pctTotal>=80?'Resultado: Desempeño sobresaliente. Listo para evaluación sumativa.':
-      pctTotal>=60?'Resultado: Desempeño suficiente. Revisar módulos incompletos.':
-                   'Resultado: Reforzar. Completar todos los módulos.',
-      {bold:true, color:evalColor}),
-    p(''),
-    sep(),
-    p(`Documento generado por SimulElec — ${new Date().toLocaleString('es-CL')}`, {size:16, color:'999999'}),
-  ];
-
-  const doc = new Document({
-    styles: {
-      default: { document: { run: { font:'Arial', size:18 } } },
-      paragraphStyles: [
-        { id:'Heading1', name:'Heading 1', basedOn:'Normal', next:'Normal', quickFormat:true,
-          run:{size:32,bold:true,font:'Arial',color:'1F3A6E'},
-          paragraph:{spacing:{before:300,after:200},outlineLevel:0} },
-        { id:'Heading2', name:'Heading 2', basedOn:'Normal', next:'Normal', quickFormat:true,
-          run:{size:26,bold:true,font:'Arial',color:'2E75B6'},
-          paragraph:{spacing:{before:200,after:120},outlineLevel:1} },
-      ]
-    },
-    sections: [{
-      properties: { page: { size:{width:11906,height:16838}, margin:{top:1440,right:1440,bottom:1440,left:1440} } },
-      children
-    }]
-  });
-
-  try {
-    const buffer = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(buffer);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `simulelec_informe_${(alumno.nombre||'estudiante').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.docx`;
-    a.click();
-    showToast('Informe DOCX exportado correctamente','ok');
-  } catch(err) {
-    console.error(err);
-    showToast('Error al generar el DOCX: '+err.message,'danger');
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<title>SimulElec — Informe ${alumno.nombre||'Estudiante'}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #1A1A1B; background: #fff; padding: 20px; }
+  .pdf-header { border-bottom: 3px solid #009A44; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .pdf-logo { font-size: 16px; font-weight: 700; color: #009A44; }
+  .pdf-meta { font-size: 10px; color: #666; text-align: right; line-height: 1.6; }
+  h2 { font-size: 14px; color: #009A44; text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; border-left: 4px solid #009A44; padding-left: 8px; }
+  h3 { font-size: 12px; color: #1A1A1B; margin: 12px 0 6px; }
+  .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 12px; }
+  .pdf-table th { background: #009A44; color: #fff; padding: 5px 7px; text-align: left; font-size: 10px; }
+  .pdf-table td { padding: 4px 7px; border-bottom: 1px solid #E0E0E0; }
+  .pdf-stats { display: flex; gap: 8px; margin-bottom: 8px; }
+  .pdf-stat { background: #F4F4F4; border: 1px solid #D8D8D8; border-radius: 6px; padding: 6px 10px; flex: 1; text-align: center; }
+  .pdf-stat-val { font-size: 14px; font-weight: 700; color: #009A44; font-family: monospace; }
+  .pdf-stat-lbl { font-size: 9px; color: #666; margin-top: 2px; }
+  .pdf-section { margin-bottom: 16px; }
+  .pdf-total { background: #E6F5EE; border: 1px solid #80CDA2; border-radius: 6px; padding: 10px; margin-bottom: 16px; display: flex; gap: 16px; }
+  .pdf-total-item { text-align: center; flex: 1; }
+  .pdf-total-val { font-size: 18px; font-weight: 700; color: #009A44; font-family: monospace; }
+  .pdf-total-lbl { font-size: 10px; color: #444; }
+  .pdf-footer { border-top: 1px solid #E0E0E0; margin-top: 20px; padding-top: 8px; font-size: 9px; color: #999; text-align: center; }
+  @media print {
+    body { padding: 10px; }
+    @page { margin: 15mm; size: A4; }
   }
+</style>
+</head>
+<body>
+  <div class="pdf-header">
+    <div>
+      <div class="pdf-logo">🔌 SimulElec — Informe de Instalación</div>
+      <div style="font-size:10px;color:#666;margin-top:4px">MUS00075 · Electricidad en Sonido en Vivo · IP Santo Tomás</div>
+    </div>
+    <div class="pdf-meta">
+      <div><strong>Estudiante:</strong> ${alumno.nombre||'—'}</div>
+      <div><strong>Fecha:</strong> ${fecha}</div>
+      <div><strong>Asignatura:</strong> ${alumno.asignatura||'MUS00075'}</div>
+    </div>
+  </div>
+
+  <h2>1. Fichas técnicas de equipos</h2>
+  <div class="pdf-total">
+    <div class="pdf-total-item"><div class="pdf-total-val">${equipos.length}</div><div class="pdf-total-lbl">Equipos</div></div>
+    <div class="pdf-total-item"><div class="pdf-total-val">${totalW.toFixed(0)}W</div><div class="pdf-total-lbl">Potencia total</div></div>
+    <div class="pdf-total-item"><div class="pdf-total-val">${totalA.toFixed(2)}A</div><div class="pdf-total-lbl">Corriente total</div></div>
+  </div>
+  <table class="pdf-table">
+    <thead><tr><th>Equipo</th><th>Sistema</th><th>Potencia</th><th>Corriente</th><th>Tipo</th><th>Conector</th><th>FP</th><th>Protección</th></tr></thead>
+    <tbody>${filasEquipos}</tbody>
+  </table>
+
+  <h2>2. Tableros de cargas</h2>
+  ${seccionesTableros}
+
+  <div class="pdf-footer">
+    Generado por SimulElec · MUS00075 · Instituto Profesional Santo Tomás · ${new Date().toLocaleDateString('es-CL')}
+  </div>
+
+  <scr' + 'ipt>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }</scr' + 'ipt>
+</body>
+</html>`;
+
+  const ventana = window.open('', '_blank');
+  if (!ventana) {
+    showToast('Activa las ventanas emergentes para exportar PDF', 'danger');
+    return;
+  }
+  ventana.document.write(html);
+  ventana.document.close();
+  showToast('Preparando PDF para imprimir...', 'ok');
 };
-
-
 
 // ══════════════════════════════════════════════════════════════════
 // MÓDULO 3D — GALERÍA DE EQUIPOS REALES
@@ -2526,6 +2782,54 @@ window.m3dInit = function() {
 };
 
 
+
+// ════ SISTEMA DE PASOS — APRENDIZAJE ══════════════════════════════
+window.PASOS_APRENDIZAJE = [
+  { num:1, titulo:'Registrar equipos', modulo:'m1', tab:'fichas',
+    desc:'Agrega al menos 4 equipos en fichas técnicas.',
+    completo:function(){ return APP.m1.equipos.length >= 4; } },
+  { num:2, titulo:'Asignar circuitos', modulo:'m1', tab:'tablero',
+    desc:'Distribuye los equipos sin sobrecargar los circuitos.',
+    completo:function(){ return APP.m1.tableros.some(function(t){return t.circuitos.some(function(c){return c.equipos&&c.equipos.length>0;});}); } },
+  { num:3, titulo:'Colocar protecciones', modulo:'m2', tab:null,
+    desc:'En tablero: 1 diferencial + 1 barra PE + 2 disyuntores.',
+    completo:function(){
+      return m2v3Elems.some(function(e){return e.tipo==='dif_4p'||e.tipo==='dif_2p';}) &&
+             m2v3Elems.some(function(e){return e.tipo==='tierra';}) &&
+             m2v3Elems.filter(function(e){return ['dis_10','dis_16','dis_20'].includes(e.tipo);}).length>=2;
+    } },
+  { num:4, titulo:'Conectar energía', modulo:'m2', tab:null,
+    desc:'Cablea: acometida → diferencial → disyuntores (≥6 cables).',
+    completo:function(){ return m2v3Cables.length >= 6; } },
+  { num:5, titulo:'Cargas con F+N+PE', modulo:'m2', tab:null,
+    desc:'Cada carga debe recibir Fase + Neutro + Tierra.',
+    completo:function(){ var d=m2v3DiagnosticarCargas(); return d.hayCargas&&d.todasCompletas; } }
+];
+window.PASO_ACTUAL = 0;
+
+window.actualizarPanelPasos = function() {
+  var el=document.getElementById('panel-pasos'); if(!el) return;
+  var h='';
+  PASOS_APRENDIZAJE.forEach(function(p,i){
+    var done=p.completo(), cur=i===PASO_ACTUAL;
+    var bg=done?'#E6F5EE':cur?'#FFFBE6':'transparent';
+    var border=done?'#009A44':cur?'#E0B000':'var(--border)';
+    var ico=done?'✅':cur?'👉':'⬜';
+    h+='<div style="padding:5px 8px;margin-bottom:3px;border-radius:6px;border:1px solid '+border+';background:'+bg+';cursor:pointer;font-size:11px" onclick="irAPaso('+i+')">'+
+      ico+' <strong>'+p.titulo+'</strong>'+
+      (cur?'<div style="font-size:9px;color:var(--text2);margin-top:2px">'+p.desc+'</div>':'')+
+      '</div>';
+  });
+  el.innerHTML=h;
+};
+
+window.irAPaso = function(n){
+  PASO_ACTUAL=n; var p=PASOS_APRENDIZAJE[n];
+  goPage(p.modulo);
+  if(p.tab&&typeof showT==='function') showT(p.modulo,p.tab);
+  actualizarPanelPasos();
+};
+
 window.goPage = (id) => {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -2535,6 +2839,7 @@ window.goPage = (id) => {
   if(id==='m2') { setTimeout(function(){m2v3Init();m2v3RenderComps();m2v3UpdateLeyenda();},80); }
   if(id==='m3d') { if(typeof m3dInit==='function') m3dInit(); }
   updateGlobalProg();
+  if(typeof actualizarPanelPasos==='function') setTimeout(actualizarPanelPasos,150);
 };
 window.showT = (mod,tab) => {
   document.querySelectorAll('#page-'+mod+' .tsec').forEach(s=>s.classList.remove('active'));
@@ -2551,11 +2856,11 @@ window.showT = (mod,tab) => {
   if(mod==='m4'&&tab==='conexiones4'&&typeof m4RenderConex==='function') m4RenderConex();
 };
 window.updateGlobalProg = () => {
-  const done=Object.values(APP.progreso).filter(Boolean).length;
-  const pf=document.getElementById('prog-global'); if(pf) pf.style.width=(done/4*100)+'%';
-  const pt=document.getElementById('prog-txt'); if(pt) pt.textContent=done+' / 4 módulos';
-  const bg=document.getElementById('badge-global'); if(bg) bg.textContent=done===4?'Completo':done>0?done+'/4':'Inicio';
-  ['m1','m2','m3','m4'].forEach(m=>{const d=document.getElementById('st-'+m);if(d) d.className='nav-dot'+(APP.progreso[m]?' done':'');});
+  const done = (APP.progreso.m1?1:0)+(APP.progreso.m2?1:0);
+  const pf=document.getElementById('prog-global'); if(pf) pf.style.width=(done/2*100)+'%';
+  const pt=document.getElementById('prog-txt'); if(pt) pt.textContent=done+' / 2 módulos';
+  const bg=document.getElementById('badge-global'); if(bg) bg.textContent=done===2?'Completo':done>0?done+'/2':'Inicio';
+  ['m1','m2'].forEach(m=>{const d=document.getElementById('st-'+m);if(d) d.className='nav-dot'+(APP.progreso[m]?' done':'');});
 };
 window.setNorma = (n) => {
   APP.norma=n; APP.m2.norma=n;
@@ -2578,12 +2883,14 @@ window.abrirModalAlumno = () => {
   document.getElementById('al-nombre').value=APP.alumno?.nombre||'';
   document.getElementById('al-fecha').value=APP.alumno?.fecha||new Date().toISOString().slice(0,10);
   document.getElementById('al-asignatura').value=APP.alumno?.asignatura||'MUS00075';
+  document.getElementById('al-tension').value=APP.tension||230;
   document.getElementById('modal-alumno').style.display='flex';
 };
 window.cerrarModal = () => { document.getElementById('modal-alumno').style.display='none'; };
 window.guardarAlumno = () => {
   APP.alumno={nombre:document.getElementById('al-nombre').value,fecha:document.getElementById('al-fecha').value,asignatura:document.getElementById('al-asignatura').value};
-  cerrarModal(); showToast('Datos del estudiante guardados','ok');
+  APP.tension=parseFloat(document.getElementById('al-tension').value)||230;
+  cerrarModal(); showToast('Datos del estudiante guardados','ok'); m1RenderTablero();
 };
 document.addEventListener('DOMContentLoaded',()=>{ updateLeyenda(); updateGlobalProg(); });
 
